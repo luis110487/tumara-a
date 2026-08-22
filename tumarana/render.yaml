@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: tumarana-api
+    runtime: python
+    rootDir: tumarana
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --workers 2 --threads 4 --timeout 60 -b 0.0.0.0:$PORT "app:create_app()"
+    healthCheckPath: /health
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: FORCE_HTTPS
+        value: "true"

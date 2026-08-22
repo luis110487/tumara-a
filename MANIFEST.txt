@@ -1,0 +1,9 @@
+TuMaraña.com Production V1
+
+Backend: Flask + Supabase REST/Auth
+Database: PostgreSQL via Supabase
+Auth: Supabase Auth
+Security: RLS + JWT + security headers
+Realtime: Supabase Realtime (messages)
+Deployment: Render
+Branding: TuMaraña.com
