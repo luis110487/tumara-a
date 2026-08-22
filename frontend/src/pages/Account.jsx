@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
 export function Account() {
   const [tab, setTab] = useState('login');
@@ -34,6 +34,11 @@ export function Account() {
         <p>Accede para solicitar servicios, administrar tus solicitudes o registrar tu actividad profesional.</p>
       </div>
       <div className="form-card">
+        {!isSupabaseConfigured && (
+          <div className="msg error">
+            El servidor todavía no tiene configurado Supabase (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY). El login y registro no funcionarán hasta que se configure.
+          </div>
+        )}
         <div className="tabs">
           <button type="button" className={tab === 'login' ? 'active' : ''} onClick={() => setTab('login')}>Ingresar</button>
           <button type="button" className={tab === 'signup' ? 'active' : ''} onClick={() => setTab('signup')}>Crear cuenta</button>
