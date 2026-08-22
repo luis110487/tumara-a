@@ -1,43 +1,45 @@
-# TuMaraña.com — Production V1
+# TuMaraña.com — Production V2
 
 Marketplace/directorio de servicios con:
 
-- Frontend Flask server-rendered, responsive.
-- Backend Flask + API REST.
-- Supabase PostgreSQL.
-- Supabase Auth (clientes/profesionales).
-- RLS para aislar solicitudes y mensajes.
-- Supabase Realtime para el chat.
-- Registro de profesionales con aprobación.
-- Buscador, categorías, perfiles y solicitudes.
+- Backend Flask como API REST pura (JSON), sin plantillas server-rendered.
+- Frontend React (Vite, JavaScript) consumiendo la API y Supabase Auth directamente.
+- Supabase PostgreSQL + RLS para aislar solicitudes y mensajes.
+- Supabase Auth (clientes/profesionales) y Supabase Realtime para el chat.
+- Registro de profesionales con aprobación, contacto por WhatsApp, y página "Mis solicitudes".
 - Branding TuMaraña.com: azul turquí, amarillo/naranja y verde del isotipo.
 
 ## Estructura
 
 ```text
-TuMarana/
-├── tumarana/
+tumaraña/
+├── backend/
 │   ├── app/
-│   │   ├── routes.py
+│   │   ├── routes.py          # endpoints /api/* y /health
 │   │   ├── supabase_client.py
-│   │   ├── templates/
-│   │   └── static/
+│   │   └── __init__.py
 │   ├── run.py
 │   ├── requirements.txt
 │   ├── Procfile
-│   ├── render.yaml
-│   └── .env.example
+│   └── render.yaml
+├── frontend/
+│   ├── src/                   # app React (Vite)
+│   ├── public/                # logo, favicons
+│   └── vercel.json
 ├── supabase/
-│   └── schema.sql
+│   ├── schema.sql
+│   └── migrations/
 └── DEPLOYMENT.md
 ```
 
 ## Local
 
+Backend:
+
 ```bash
-cd tumarana
+cd backend
 python -m venv .venv
-# Windows: .venv\\Scripts\\activate
+# Windows: .venv\Scripts\activate
 # Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
 copy .env.example .env  # Windows
@@ -45,13 +47,24 @@ copy .env.example .env  # Windows
 python run.py
 ```
 
+Frontend:
+
+```bash
+cd frontend
+npm install
+copy .env.example .env  # Windows
+# cp .env.example .env  # Linux/macOS
+npm run dev
+```
+
+El servidor de Vite (`:5173`) hace proxy de `/api` y `/health` hacia el backend Flask (`:5000`) en desarrollo.
+
 ## Producción
 
 1. Crear proyecto en Supabase.
-2. Ejecutar `supabase/schema.sql` en SQL Editor.
+2. Ejecutar `supabase/schema.sql` y luego `supabase/migrations/*.sql` en orden, en el SQL Editor.
 3. Crear/confirmar usuarios en Supabase Auth.
-4. Copiar `SUPABASE_URL` y `SUPABASE_ANON_KEY` a Render.
-5. Render ejecutará Gunicorn mediante `render.yaml`.
-6. Configurar dominio y HTTPS.
+4. Backend en Render: variables `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `FRONTEND_ORIGIN` (dominio de Vercel).
+5. Frontend en Vercel: variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`; `vercel.json` hace el proxy de `/api` y `/health` hacia Render.
 
-Nunca poner `SUPABASE_SERVICE_ROLE_KEY` en frontend ni en este proyecto. La app utiliza la `anon key` + JWT del usuario y RLS.
+Nunca poner `SUPABASE_SERVICE_ROLE_KEY` en el frontend ni en el backend. La app utiliza la `anon key` + JWT del usuario y RLS.
