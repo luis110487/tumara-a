@@ -7,7 +7,7 @@ export function Footer() {
         <Logo large />
         <span>© {new Date().getFullYear()} TuMaraña.com</span>
       </div>
-      <div className="footer-credit">by techdatasync.com</div>
+      <div className="footer-credit">by <a href="https://techdatasync.com" target="_blank" rel="noopener noreferrer">techdatasync.com</a></div>
     </footer>
   );
 }
