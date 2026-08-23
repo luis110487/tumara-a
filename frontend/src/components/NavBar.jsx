@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Logo } from './Logo';
 
 export function NavBar() {
-  const { session, signOut } = useAuth();
+  const { session, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   async function handleLogout() {
@@ -20,6 +20,7 @@ export function NavBar() {
         <Link to="/buscar">Profesionales</Link>
         <Link to="/mis-solicitudes">Solicitudes</Link>
         <a href="/#como-funciona">Cómo funciona</a>
+        {isAdmin && <Link to="/admin">Admin</Link>}
       </nav>
       <div className="nav-actions">
         {session && <Link to="/mis-solicitudes" className="nav-messages">💬 Mensajes</Link>}

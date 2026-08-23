@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminRoute } from './components/AdminRoute';
 import { Home } from './pages/Home';
 import { SearchResults } from './pages/SearchResults';
 import { ProfessionalProfile } from './pages/ProfessionalProfile';
@@ -10,6 +11,11 @@ import { RequestService } from './pages/RequestService';
 import { Chat } from './pages/Chat';
 import { MyRequests } from './pages/MyRequests';
 import { NotFound } from './pages/NotFound';
+import { AdminLayout } from './pages/admin/AdminLayout';
+import { AdminProfessionals } from './pages/admin/AdminProfessionals';
+import { AdminCategories } from './pages/admin/AdminCategories';
+import { AdminRequests } from './pages/admin/AdminRequests';
+import { AdminUsers } from './pages/admin/AdminUsers';
 
 export default function App() {
   return (
@@ -23,6 +29,13 @@ export default function App() {
         <Route path="/solicitar/:id" element={<ProtectedRoute><RequestService /></ProtectedRoute>} />
         <Route path="/solicitud/:id/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
         <Route path="/mis-solicitudes" element={<ProtectedRoute><MyRequests /></ProtectedRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+          <Route index element={<AdminProfessionals />} />
+          <Route path="profesionales" element={<AdminProfessionals />} />
+          <Route path="categorias" element={<AdminCategories />} />
+          <Route path="solicitudes" element={<AdminRequests />} />
+          <Route path="usuarios" element={<AdminUsers />} />
+        </Route>
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

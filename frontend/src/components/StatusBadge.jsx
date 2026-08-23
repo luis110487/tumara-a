@@ -18,8 +18,22 @@ const CLASSES = {
   cancelled: 'tm-status-cancelled',
 };
 
-export function StatusBadge({ status }) {
-  return <span className={`status-pill ${CLASSES[status] || ''}`}>● {LABELS[status] || status}</span>;
+export function StatusBadge({ status, labels = LABELS, classes = CLASSES }) {
+  return <span className={`status-pill ${classes[status] || ''}`}>● {labels[status] || status}</span>;
 }
 
 export const STATUS_OPTIONS = Object.entries(LABELS);
+
+export const PROFESSIONAL_STATUS_LABELS = {
+  pending: 'Pendiente',
+  approved: 'Aprobado',
+  rejected: 'Rechazado',
+  suspended: 'Suspendido',
+};
+
+export const PROFESSIONAL_STATUS_CLASSES = {
+  pending: 'tm-status-pending',
+  approved: 'tm-status-active',
+  rejected: 'tm-status-cancelled',
+  suspended: 'tm-status-cancelled',
+};

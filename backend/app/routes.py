@@ -1,3 +1,5 @@
+import re
+
 from flask import Blueprint, request, jsonify, abort
 from .supabase_client import rest, rpc, auth_user, SupabaseError
 
@@ -6,6 +8,8 @@ main = Blueprint('main', __name__)
 PROFESSIONAL_FIELDS = 'id,display_name,city,neighborhood,description,experience_years,rating,total_reviews,verified,category_id,whatsapp'
 REQUEST_FIELDS = 'id,professional_id,customer_id,service_title,description,city,address,preferred_date,status,created_at,updated_at'
 VALID_STATUSES = {'requested', 'in_conversation', 'quoted', 'accepted', 'in_progress', 'completed', 'cancelled'}
+PROFESSIONAL_STATUSES = {'pending', 'approved', 'rejected', 'suspended'}
+PROFESSIONAL_ACTIONS = {'approve': ('approved', True), 'reject': ('rejected', False), 'suspend': ('suspended', False)}
 
 
 def bearer():
@@ -18,6 +22,17 @@ def require_user():
     user = auth_user(token) if token else None
     if not user:
         abort(401, description='Autenticación requerida')
+    return token, user
+
+
+def require_admin():
+    token, user = require_user()
+    try:
+        profs = rest('profiles', {'select': 'role,is_active', 'id': f'eq.{user["id"]}', 'limit': '1'}, token=token)
+    except SupabaseError as e:
+        abort(500, description=str(e))
+    if not profs or profs[0]['role'] != 'admin' or not profs[0].get('is_active', True):
+        abort(403, description='No autorizado')
     return token, user
 
 
@@ -39,6 +54,18 @@ def with_categories(pros):
 @main.get('/health')
 def health():
     return jsonify({'status': 'ok', 'service': 'tumarana-api'})
+
+
+@main.get('/api/me')
+def api_me():
+    token, user = require_user()
+    try:
+        profs = rest('profiles', {'select': '*', 'id': f'eq.{user["id"]}', 'limit': '1'}, token=token)
+    except SupabaseError as e:
+        return api_error(e)
+    if not profs:
+        return jsonify({'error': 'Perfil no encontrado'}), 404
+    return jsonify(profs[0])
 
 
 @main.get('/api/categories')
@@ -206,14 +233,145 @@ def api_message(request_id):
         return api_error(e)
 
 
-@main.post('/api/admin/professionals/<int:professional_id>/approve')
-def admin_approve(professional_id):
-    token, user = require_user()
+@main.get('/api/admin/professionals')
+def admin_list_professionals():
+    token, _ = require_admin()
+    status = request.args.get('status', 'pending').strip()
+    params = {'select': PROFESSIONAL_FIELDS + ',user_id,status,created_at', 'order': 'created_at.desc'}
+    if status != 'all':
+        if status not in PROFESSIONAL_STATUSES:
+            return jsonify({'error': 'Estado inválido'}), 400
+        params['status'] = f'eq.{status}'
     try:
-        profs = rest('profiles', {'select': 'role', 'id': f'eq.{user["id"]}', 'limit': '1'}, token=token)
-        if not profs or profs[0]['role'] != 'admin':
-            return jsonify({'error': 'No autorizado'}), 403
-        rows = rest('professionals', {'id': f'eq.{professional_id}'}, method='PATCH', data={'status': 'approved', 'verified': True}, token=token, prefer='return=representation')
-        return jsonify(rows[0] if rows else {}), 200
+        return jsonify(with_categories(rest('professionals', params, token=token)))
     except SupabaseError as e:
+        return api_error(e)
+
+
+@main.post('/api/admin/professionals/<int:professional_id>/<action>')
+def admin_set_professional_status(professional_id, action):
+    token, _ = require_admin()
+    if action not in PROFESSIONAL_ACTIONS:
+        return jsonify({'error': 'Acción inválida'}), 400
+    status, verified = PROFESSIONAL_ACTIONS[action]
+    try:
+        rows = rest('professionals', {'id': f'eq.{professional_id}'}, method='PATCH', data={'status': status, 'verified': verified}, token=token, prefer='return=representation')
+        if not rows:
+            return jsonify({'error': 'Profesional no encontrado'}), 404
+        return jsonify(rows[0])
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.get('/api/admin/categories')
+def admin_list_categories():
+    token, _ = require_admin()
+    try:
+        return jsonify(rest('categories', {'select': '*', 'order': 'name.asc'}, token=token))
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.post('/api/admin/categories')
+def admin_create_category():
+    token, _ = require_admin()
+    d = request.get_json(silent=True) or {}
+    name = str(d.get('name', '')).strip()[:100]
+    slug = str(d.get('slug', '')).strip()[:100]
+    if not name or not slug or not re.match(r'^[a-z0-9-]+$', slug):
+        return jsonify({'error': 'name y slug (letras minúsculas, números y guiones) son obligatorios'}), 400
+    try:
+        rows = rest('categories', method='POST', data={
+            'name': name,
+            'slug': slug,
+            'icon': str(d.get('icon', '')).strip()[:50] or None,
+            'description': str(d.get('description', '')).strip()[:500] or None,
+            'is_active': bool(d.get('is_active', True)),
+        }, token=token, prefer='return=representation')
+        return jsonify(rows[0]), 201
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.patch('/api/admin/categories/<int:category_id>')
+def admin_update_category(category_id):
+    token, _ = require_admin()
+    d = request.get_json(silent=True) or {}
+    data = {}
+    if 'name' in d:
+        data['name'] = str(d.get('name', '')).strip()[:100]
+    if 'slug' in d:
+        slug = str(d.get('slug', '')).strip()[:100]
+        if not re.match(r'^[a-z0-9-]+$', slug):
+            return jsonify({'error': 'slug inválido'}), 400
+        data['slug'] = slug
+    if 'icon' in d:
+        data['icon'] = str(d.get('icon', '')).strip()[:50] or None
+    if 'description' in d:
+        data['description'] = str(d.get('description', '')).strip()[:500] or None
+    if 'is_active' in d:
+        data['is_active'] = bool(d.get('is_active'))
+    if not data:
+        return jsonify({'error': 'Nada para actualizar'}), 400
+    try:
+        rows = rest('categories', {'id': f'eq.{category_id}'}, method='PATCH', data=data, token=token, prefer='return=representation')
+        if not rows:
+            return jsonify({'error': 'Categoría no encontrada'}), 404
+        return jsonify(rows[0])
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.get('/api/admin/requests')
+def admin_list_requests():
+    token, _ = require_admin()
+    status = request.args.get('status', '').strip()
+    params = {'select': REQUEST_FIELDS, 'order': 'updated_at.desc'}
+    if status:
+        if status not in VALID_STATUSES:
+            return jsonify({'error': 'Estado inválido'}), 400
+        params['status'] = f'eq.{status}'
+    try:
+        rows = rest('service_requests', params, token=token)
+        pro_ids = list({r['professional_id'] for r in rows})
+        pros = rest('professionals', {'select': 'id,display_name', 'id': f'in.({",".join(map(str, pro_ids))})'}, token=token) if pro_ids else []
+        promap = {p['id']: p['display_name'] for p in pros}
+        for r in rows:
+            r['professional_name'] = promap.get(r['professional_id'], '—')
+        return jsonify(rows)
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.get('/api/admin/users')
+def admin_list_users():
+    token, _ = require_admin()
+    role = request.args.get('role', '').strip()
+    q = request.args.get('q', '').strip()[:100]
+    params = {'select': 'id,full_name,phone,role,is_active,created_at', 'order': 'created_at.desc'}
+    if role:
+        if role not in {'customer', 'professional', 'admin'}:
+            return jsonify({'error': 'Rol inválido'}), 400
+        params['role'] = f'eq.{role}'
+    if q:
+        params['full_name'] = f'ilike.*{q}*'
+    try:
+        return jsonify(rest('profiles', params, token=token))
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.post('/api/admin/users/promote')
+def admin_promote_user():
+    token, _ = require_admin()
+    d = request.get_json(silent=True) or {}
+    email = str(d.get('email', '')).strip().lower()[:200]
+    if not email or '@' not in email:
+        return jsonify({'error': 'Email inválido'}), 400
+    try:
+        result = rpc('promote_to_admin', {'p_email': email}, token)
+        return jsonify(result)
+    except SupabaseError as e:
+        if 'user not found' in str(e).lower():
+            return jsonify({'error': 'No existe un usuario con ese correo'}), 404
         return api_error(e)

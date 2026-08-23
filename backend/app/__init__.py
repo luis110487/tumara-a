@@ -1,5 +1,6 @@
 import os
-from flask import Flask
+from flask import Flask, jsonify
+from werkzeug.exceptions import HTTPException
 from dotenv import load_dotenv
 from flask_cors import CORS
 
@@ -25,6 +26,10 @@ def create_app():
         if app.config['FORCE_HTTPS']:
             response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
         return response
+
+    @app.errorhandler(HTTPException)
+    def json_http_error(e):
+        return jsonify({'error': e.description or e.name}), e.code
 
     from .routes import main
     app.register_blueprint(main)

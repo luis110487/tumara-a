@@ -98,9 +98,11 @@ a{color:inherit}
 .form-card input,.form-card select,.form-card textarea,.filters input,.filters select{width:100%;border:1px solid #d6e0e9;border-radius:8px;padding:12px;outline:none;background:#fff;font:inherit;color:var(--tm-text)}
 .form-card input:focus,.form-card select:focus,.form-card textarea:focus{border-color:#4e86bf;box-shadow:0 0 0 3px #0a3a7512}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.tabs{display:flex;border-bottom:1px solid var(--tm-line);margin-bottom:20px}
+.tabs{display:flex;border-bottom:1px solid var(--tm-line);margin-bottom:20px;flex-wrap:wrap}
 .tabs button{border:0;background:none;padding:10px 14px;font-weight:800;color:#7a8796;cursor:pointer}
 .tabs button.active{color:var(--tm-blue);border-bottom:2px solid var(--tm-yellow)}
+.tabs a{border:0;background:none;padding:10px 14px;font-weight:800;color:#7a8796;text-decoration:none}
+.tabs a.active{color:var(--tm-blue);border-bottom:2px solid var(--tm-yellow)}
 .msg{min-height:18px;margin-top:12px;font-size:12px}
 .msg.error{color:#b42318}
 .msg.ok{color:#177245}
@@ -136,6 +138,30 @@ a{color:inherit}
 .request-row{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border:1px solid var(--tm-line);border-radius:12px;background:#fff;text-decoration:none;color:inherit}
 .request-row h3{margin:0 0 4px;font-size:14px}
 .request-row p{margin:0;font-size:12px;color:var(--tm-muted)}
+
+/* Admin */
+.admin-layout{max-width:1160px;margin:auto;padding:55px 20px}
+.admin-list{display:flex;flex-direction:column;gap:10px}
+.admin-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px 20px;border:1px solid var(--tm-line);border-radius:12px;background:#fff;flex-wrap:wrap}
+.admin-row h3{margin:0 0 4px;font-size:14px}
+.admin-row p{margin:0;font-size:12px;color:var(--tm-muted)}
+.admin-row-actions{display:flex;gap:8px;flex-wrap:wrap}
+.admin-row-actions .btn{padding:8px 12px;font-size:11px}
+.admin-toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.admin-toolbar select,.admin-toolbar input{border:1px solid var(--tm-line);border-radius:8px;padding:9px 12px;font:inherit}
+.admin-inline-form{display:grid;grid-template-columns:1fr 1fr 90px 1fr auto;gap:8px;margin-bottom:22px}
+.admin-inline-form input{border:1px solid var(--tm-line);border-radius:8px;padding:10px;font:inherit}
+.role-badge{font-size:9px;font-weight:800;border-radius:12px;padding:4px 8px;background:#e6eaf4;color:#26407a}
+.role-badge.admin{background:#fef3dd;color:#a06600}
+.admin-promote-card{margin-bottom:24px}
+.admin-promote-form{flex-direction:row;gap:10px;align-items:flex-end}
+.admin-promote-form label{flex:1}
+@media(max-width:600px){
+  .admin-promote-form{flex-direction:column;align-items:stretch}
+}
+@media(max-width:850px){
+  .admin-inline-form{grid-template-columns:1fr 1fr}
+}
 
 /* Chat */
 .chat-layout{max-width:850px;margin:20px auto}
