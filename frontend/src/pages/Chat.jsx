@@ -11,6 +11,9 @@ export function Chat() {
   const [data, setData] = useState(null);
   const [msg, setMsg] = useState('');
   const [body, setBody] = useState('');
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [reviewMsg, setReviewMsg] = useState({ text: '', ok: false });
   const navigate = useNavigate();
   const channelRef = useRef(null);
 
@@ -45,6 +48,18 @@ export function Chat() {
       await loadChat();
     } catch (err) {
       setMsg(err.message);
+    }
+  }
+
+  async function handleReview(e) {
+    e.preventDefault();
+    setReviewMsg({ text: '', ok: false });
+    try {
+      await apiFetch(`/api/requests/${id}/review`, { method: 'POST', body: JSON.stringify({ rating, comment: comment.trim() }) });
+      setReviewMsg({ text: '¡Gracias por tu calificación!', ok: true });
+      await loadChat();
+    } catch (err) {
+      setReviewMsg({ text: err.message, ok: false });
     }
   }
 
@@ -91,6 +106,32 @@ export function Chat() {
           </form>
           {msg && <div className="msg error">{msg}</div>}
         </div>
+
+        {data && data.status === 'completed' && data.is_customer && (
+          <div className="form-card" style={{ marginTop: '20px' }}>
+            {data.review ? (
+              <>
+                <h2 className="requests-subhead">Tu calificación</h2>
+                <p style={{ fontSize: '20px', color: '#f0a400' }}>{'★'.repeat(data.review.rating)}{'☆'.repeat(5 - data.review.rating)}</p>
+                {data.review.comment && <p style={{ color: 'var(--tm-muted)' }}>{data.review.comment}</p>}
+              </>
+            ) : (
+              <>
+                <h2 className="requests-subhead">Califica este servicio</h2>
+                <form onSubmit={handleReview}>
+                  <label>Calificación
+                    <select value={rating} onChange={e => setRating(Number(e.target.value))}>
+                      {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{'★'.repeat(n)}{'☆'.repeat(5 - n)} ({n})</option>)}
+                    </select>
+                  </label>
+                  <label>Comentario (opcional)<textarea value={comment} onChange={e => setComment(e.target.value)} rows={3} maxLength={2000} placeholder="¿Cómo fue tu experiencia?" /></label>
+                  <button className="btn primary" type="submit">Enviar calificación</button>
+                </form>
+                {reviewMsg.text && <div className={`msg ${reviewMsg.ok ? 'ok' : 'error'}`}>{reviewMsg.text}</div>}
+              </>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

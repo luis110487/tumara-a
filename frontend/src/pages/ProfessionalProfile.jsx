@@ -6,10 +6,12 @@ import { WhatsappButton } from '../components/WhatsappButton';
 export function ProfessionalProfile() {
   const { id } = useParams();
   const [p, setP] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     apiFetchPublic(`/api/professionals/${id}`).then(setP).catch(() => setError('No encontramos este profesional.'));
+    apiFetchPublic(`/api/professionals/${id}/reviews`).then(setReviews).catch(() => setReviews([]));
   }, [id]);
 
   if (error) return <section className="profile"><p>{error}</p></section>;
@@ -44,6 +46,22 @@ export function ProfessionalProfile() {
           <div><b>{p.total_reviews}</b><span>reseñas</span></div>
         </div>
       </div>
+
+      {reviews.length > 0 && (
+        <div className="profile-body" style={{ marginTop: '20px' }}>
+          <h2>Reseñas de clientes</h2>
+          <div className="request-list">
+            {reviews.map(r => (
+              <div key={r.id} className="request-row" style={{ cursor: 'default' }}>
+                <div>
+                  <p style={{ color: '#f0a400', margin: '0 0 4px' }}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</p>
+                  {r.comment && <p style={{ margin: 0 }}>{r.comment}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

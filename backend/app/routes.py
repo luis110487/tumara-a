@@ -138,6 +138,15 @@ def api_professional_detail(professional_id):
     return jsonify(rows[0])
 
 
+@main.get('/api/professionals/<int:professional_id>/reviews')
+def api_professional_reviews(professional_id):
+    try:
+        reviews = rest('reviews', {'select': 'id,rating,comment,created_at', 'professional_id': f'eq.{professional_id}', 'order': 'created_at.desc'})
+    except SupabaseError:
+        reviews = []
+    return jsonify(reviews)
+
+
 @main.post('/api/professionals')
 def api_professional_create():
     token, user = require_user()
@@ -281,10 +290,47 @@ def api_request_get(request_id):
         if req['customer_id'] != user['id'] and pros[0]['user_id'] != user['id']:
             return jsonify({'error': 'No autorizado'}), 403
         msgs = rest('messages', {'select': 'id,request_id,sender_id,body,is_read,created_at', 'request_id': f'eq.{request_id}', 'order': 'created_at.asc'}, token=token)
+        reviews = rest('reviews', {'select': 'id,rating,comment,created_at', 'request_id': f'eq.{request_id}', 'limit': '1'}, token=token)
         req['professional'] = {'id': pros[0]['id'], 'display_name': pros[0]['display_name'], 'is_mine': pros[0]['user_id'] == user['id']}
         req['messages'] = msgs
+        req['review'] = reviews[0] if reviews else None
+        req['is_customer'] = req['customer_id'] == user['id']
         return jsonify(req)
     except SupabaseError as e:
+        return api_error(e)
+
+
+@main.post('/api/requests/<int:request_id>/review')
+def api_request_review(request_id):
+    token, user = require_user()
+    d = request.get_json(silent=True) or {}
+    try:
+        rating = int(d.get('rating'))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'La calificación debe ser un número entre 1 y 5'}), 400
+    if rating < 1 or rating > 5:
+        return jsonify({'error': 'La calificación debe estar entre 1 y 5'}), 400
+    comment = str(d.get('comment', '')).strip()[:2000] or None
+    try:
+        rows = rest('service_requests', {'select': 'id,professional_id,customer_id,status', 'id': f'eq.{request_id}', 'limit': '1'}, token=token)
+        if not rows:
+            return jsonify({'error': 'Solicitud no encontrada'}), 404
+        req = rows[0]
+        if req['customer_id'] != user['id']:
+            return jsonify({'error': 'Solo el cliente que hizo la solicitud puede calificarla'}), 403
+        if req['status'] != 'completed':
+            return jsonify({'error': 'Solo puedes calificar solicitudes completadas'}), 400
+        review = rest('reviews', method='POST', data={
+            'request_id': request_id,
+            'professional_id': req['professional_id'],
+            'customer_id': user['id'],
+            'rating': rating,
+            'comment': comment,
+        }, token=token, prefer='return=representation')
+        return jsonify(review[0]), 201
+    except SupabaseError as e:
+        if 'duplicate key' in str(e).lower():
+            return jsonify({'error': 'Ya calificaste esta solicitud'}), 409
         return api_error(e)
 
 
