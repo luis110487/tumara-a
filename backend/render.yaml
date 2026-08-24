@@ -12,6 +12,6 @@ services:
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: FRONTEND_ORIGIN
-        value: "https://tumarana.vercel.app"
+        value: "https://tumara-a.vercel.app"
       - key: FORCE_HTTPS
         value: "true"

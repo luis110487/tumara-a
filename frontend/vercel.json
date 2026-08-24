@@ -2,8 +2,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://REPLACE_WITH_RENDER_BACKEND/api/:path*" },
-    { "source": "/health", "destination": "https://REPLACE_WITH_RENDER_BACKEND/health" },
+    { "source": "/api/:path*", "destination": "https://tumara-a.onrender.com/api/:path*" },
+    { "source": "/health", "destination": "https://tumara-a.onrender.com/health" },
     { "source": "/((?!api|health).*)", "destination": "/index.html" }
   ]
 }
