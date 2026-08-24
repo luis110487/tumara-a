@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../../lib/apiClient';
 
+const PER_PAGE = 20;
+
 export function AdminUsers() {
   const [role, setRole] = useState('');
+  const [status, setStatus] = useState('');
+  const [page, setPage] = useState(1);
   const [users, setUsers] = useState([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [promoteMsg, setPromoteMsg] = useState({ text: '', ok: false });
@@ -14,14 +19,19 @@ export function AdminUsers() {
 
   function load() {
     setLoading(true);
-    const qs = role ? `?role=${role}` : '';
-    apiFetch(`/api/admin/users${qs}`)
-      .then(setUsers)
+    const params = new URLSearchParams({ page: String(page), per_page: String(PER_PAGE) });
+    if (role) params.set('role', role);
+    if (status) params.set('status', status);
+    apiFetch(`/api/admin/users?${params.toString()}`)
+      .then(d => { setUsers(d.users); setTotal(d.total); })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => { load(); }, [role]);
+  useEffect(() => { load(); }, [role, status, page]);
+  useEffect(() => { setPage(1); }, [role, status]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
 
   async function handlePromote(e) {
     e.preventDefault();
@@ -169,29 +179,44 @@ export function AdminUsers() {
           <option value="professional">Profesionales</option>
           <option value="admin">Administradores</option>
         </select>
+        <select value={status} onChange={e => setStatus(e.target.value)}>
+          <option value="">Todos los estados</option>
+          <option value="active">Activas</option>
+          <option value="inactive">Desactivadas</option>
+        </select>
       </div>
       {error && <div className="msg error">{error}</div>}
       {loading ? <p className="loading">Cargando…</p> : (
-        <div className="admin-list">
-          {users.map(u => (
-            <article className="admin-row" key={u.id}>
-              <div>
-                <h3>{u.full_name}</h3>
-                <p>{u.email || 'Sin correo'}</p>
-                <p>{u.phone || 'Sin teléfono'}</p>
-              </div>
-              <span className={`role-badge ${u.role}`}>{u.role}</span>
-              <span className={`status-pill ${u.is_active ? 'tm-status-active' : 'tm-status-cancelled'}`}>
-                ● {u.is_active ? 'Activa' : 'Desactivada'}
-              </span>
-              <div className="admin-row-actions">
-                <button className="btn outline" onClick={() => setEditingId(u.id)}>Editar</button>
-                <button className="btn outline" onClick={() => handleResetPassword(u)}>Nueva contraseña</button>
-                <button className="btn outline" onClick={() => toggleActive(u)}>{u.is_active ? 'Desactivar' : 'Activar'}</button>
-              </div>
-            </article>
-          ))}
-        </div>
+        <>
+          <div className="admin-list">
+            {users.length === 0 && <div className="empty">No hay usuarios con estos filtros.</div>}
+            {users.map(u => (
+              <article className="admin-row" key={u.id}>
+                <div>
+                  <h3>{u.full_name}</h3>
+                  <p>{u.email || 'Sin correo'}</p>
+                  <p>{u.phone || 'Sin teléfono'}</p>
+                </div>
+                <span className={`role-badge ${u.role}`}>{u.role}</span>
+                <span className={`status-pill ${u.is_active ? 'tm-status-active' : 'tm-status-cancelled'}`}>
+                  ● {u.is_active ? 'Activa' : 'Desactivada'}
+                </span>
+                <div className="admin-row-actions">
+                  <button className="btn outline" onClick={() => setEditingId(u.id)}>Editar</button>
+                  <button className="btn outline" onClick={() => handleResetPassword(u)}>Nueva contraseña</button>
+                  <button className="btn outline" onClick={() => toggleActive(u)}>{u.is_active ? 'Desactivar' : 'Activar'}</button>
+                </div>
+              </article>
+            ))}
+          </div>
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '14px', marginTop: '20px' }}>
+              <button className="btn outline" type="button" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>← Anterior</button>
+              <span style={{ fontSize: '12px', color: 'var(--tm-muted)' }}>Página {page} de {totalPages} · {total} usuarios</span>
+              <button className="btn outline" type="button" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Siguiente →</button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -478,16 +478,34 @@ def admin_list_requests():
 def admin_list_users():
     token, _ = require_admin()
     role = request.args.get('role', '').strip()
+    status = request.args.get('status', '').strip()
     q = request.args.get('q', '').strip()[:100]
-    params = {'select': 'id,full_name,phone,role,is_active,created_at', 'order': 'created_at.desc'}
+    try:
+        page = max(1, int(request.args.get('page', '1')))
+    except ValueError:
+        page = 1
+    try:
+        per_page = max(1, min(int(request.args.get('per_page', '20')), 100))
+    except ValueError:
+        per_page = 20
+    params = {
+        'select': 'id,full_name,phone,role,is_active,created_at',
+        'order': 'created_at.desc',
+        'limit': str(per_page),
+        'offset': str((page - 1) * per_page),
+    }
     if role:
         if role not in {'customer', 'professional', 'admin'}:
             return jsonify({'error': 'Rol inválido'}), 400
         params['role'] = f'eq.{role}'
+    if status:
+        if status not in {'active', 'inactive'}:
+            return jsonify({'error': 'Estado inválido'}), 400
+        params['is_active'] = f'eq.{"true" if status == "active" else "false"}'
     if q:
         params['full_name'] = f'ilike.*{q}*'
     try:
-        users = rest('profiles', params, token=token)
+        users, total = rest('profiles', params, token=token, with_count=True)
     except SupabaseError as e:
         return api_error(e)
     try:
@@ -497,7 +515,7 @@ def admin_list_users():
     except SupabaseError:
         for u in users:
             u['email'] = None
-    return jsonify(users)
+    return jsonify({'users': users, 'total': total or 0, 'page': page, 'per_page': per_page})
 
 
 @main.patch('/api/admin/users/<uuid:user_id>/active')

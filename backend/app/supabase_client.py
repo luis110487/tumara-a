@@ -20,17 +20,25 @@ def headers(token=None):
         'Accept': 'application/json',
     }
 
-def rest(table, params=None, method='GET', data=None, token=None, prefer=None):
+def rest(table, params=None, method='GET', data=None, token=None, prefer=None, with_count=False):
     url, _ = cfg()
     h = headers(token)
-    if prefer:
-        h['Prefer'] = prefer
+    prefers = [p for p in [prefer, 'count=exact' if with_count else None] if p]
+    if prefers:
+        h['Prefer'] = ','.join(prefers)
     r = requests.request(method, f'{url}/rest/v1/{table}', params=params, headers=h, json=data, timeout=15)
     if r.status_code >= 400:
         raise SupabaseError(f'Supabase REST {r.status_code}: {r.text[:800]}')
-    if not r.text:
-        return []
-    return r.json()
+    body = r.json() if r.text else []
+    if not with_count:
+        return body
+    total = None
+    content_range = r.headers.get('Content-Range', '')
+    if '/' in content_range:
+        total_part = content_range.split('/')[-1]
+        if total_part.isdigit():
+            total = int(total_part)
+    return body, total
 
 def rpc(name, data, token=None):
     url, _ = cfg()
