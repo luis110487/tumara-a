@@ -412,3 +412,81 @@ def admin_promote_user():
         if 'user not found' in str(e).lower():
             return jsonify({'error': 'No existe un usuario con ese correo'}), 404
         return api_error(e)
+
+
+@main.get('/api/banners')
+def api_banners():
+    try:
+        banners = rest('banners', {'select': 'id,title,image_url,link,is_active', 'is_active': 'eq.true', 'order': 'position.asc'})
+        return jsonify(banners)
+    except SupabaseError:
+        return jsonify([])
+
+
+@main.get('/api/admin/banners')
+def admin_list_banners():
+    token, _ = require_admin()
+    try:
+        banners = rest('banners', {'select': '*', 'order': 'position.asc'}, token=token)
+        return jsonify(banners)
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.post('/api/admin/banners')
+def admin_create_banner():
+    token, _ = require_admin()
+    d = request.get_json(silent=True) or {}
+    image_url = str(d.get('image_url', '')).strip()[:500]
+    if not image_url:
+        return jsonify({'error': 'URL de imagen es obligatoria'}), 400
+    try:
+        rows = rest('banners', method='POST', data={
+            'title': str(d.get('title', '')).strip()[:200] or None,
+            'image_url': image_url,
+            'link': str(d.get('link', '')).strip()[:500] or None,
+            'position': int(d.get('position', 0)),
+            'is_active': bool(d.get('is_active', True)),
+        }, token=token, prefer='return=representation')
+        return jsonify(rows[0]), 201
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.patch('/api/admin/banners/<int:banner_id>')
+def admin_update_banner(banner_id):
+    token, _ = require_admin()
+    d = request.get_json(silent=True) or {}
+    data = {}
+    if 'title' in d:
+        data['title'] = str(d.get('title', '')).strip()[:200] or None
+    if 'image_url' in d:
+        image_url = str(d.get('image_url', '')).strip()[:500]
+        if not image_url:
+            return jsonify({'error': 'URL de imagen no puede estar vacía'}), 400
+        data['image_url'] = image_url
+    if 'link' in d:
+        data['link'] = str(d.get('link', '')).strip()[:500] or None
+    if 'position' in d:
+        data['position'] = int(d.get('position', 0))
+    if 'is_active' in d:
+        data['is_active'] = bool(d.get('is_active'))
+    if not data:
+        return jsonify({'error': 'Nada para actualizar'}), 400
+    try:
+        rows = rest('banners', {'id': f'eq.{banner_id}'}, method='PATCH', data=data, token=token, prefer='return=representation')
+        if not rows:
+            return jsonify({'error': 'Banner no encontrado'}), 404
+        return jsonify(rows[0])
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.delete('/api/admin/banners/<int:banner_id>')
+def admin_delete_banner(banner_id):
+    token, _ = require_admin()
+    try:
+        rest('banners', {'id': f'eq.{banner_id}'}, method='DELETE', token=token)
+        return jsonify({'ok': True}), 204
+    except SupabaseError as e:
+        return api_error(e)

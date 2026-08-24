@@ -4,6 +4,7 @@ import { apiFetchPublic } from '../lib/apiClient';
 import { CategoryCard } from '../components/CategoryCard';
 import { ProCard } from '../components/ProCard';
 import { CitySelect } from '../components/CitySelect';
+import { BannerAd } from '../components/BannerAd';
 
 export function Home() {
   const [categories, setCategories] = useState([]);
@@ -72,6 +73,8 @@ export function Home() {
           {professionals.length ? professionals.map(p => <ProCard key={p.id} p={p} />) : <div className="empty">Conecta Supabase para mostrar profesionales.</div>}
         </div>
       </section>
+
+      <BannerAd />
 
       <section className="tm-section" id="como-funciona">
         <div className="tm-section-head"><h2>Así de fácil</h2></div>

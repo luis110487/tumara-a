@@ -17,6 +17,7 @@ import { AdminProfessionals } from './pages/admin/AdminProfessionals';
 import { AdminCategories } from './pages/admin/AdminCategories';
 import { AdminRequests } from './pages/admin/AdminRequests';
 import { AdminUsers } from './pages/admin/AdminUsers';
+import { AdminBanners } from './pages/admin/AdminBanners';
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="categorias" element={<AdminCategories />} />
           <Route path="solicitudes" element={<AdminRequests />} />
           <Route path="usuarios" element={<AdminUsers />} />
+          <Route path="banners" element={<AdminBanners />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Route>

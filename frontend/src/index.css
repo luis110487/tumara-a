@@ -200,6 +200,19 @@ a{color:inherit}
 .composer button{border:0;border-radius:8px;background:var(--tm-yellow);color:var(--tm-navy);width:48px;font-weight:900}
 .back{color:var(--tm-blue);font-size:12px;font-weight:850;text-decoration:none}
 
+/* Banner Ad */
+.tm-banner-ad{max-width:1240px;margin:42px auto;padding:0 42px;position:relative}
+.tm-banner-container{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px #092d4b0f;height:280px}
+.tm-banner-image{width:100%;height:100%;object-fit:cover;display:block}
+.tm-banner-link{position:absolute;top:0;left:0;width:100%;height:100%;cursor:pointer}
+.tm-banner-controls{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center;z-index:10}
+.tm-banner-btn{border:0;background:#fff;color:#0a3a75;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:18px;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px #092d4b1a;transition:.2s}
+.tm-banner-btn:hover{transform:scale(1.1);box-shadow:0 6px 16px #092d4b2a}
+.tm-banner-dots{display:flex;gap:6px}
+.tm-dot{width:10px;height:10px;border-radius:50%;border:0;background:#fff;opacity:.6;cursor:pointer;transition:.3s;padding:0}
+.tm-dot:hover{opacity:.8}
+.tm-dot.active{opacity:1;background:var(--tm-yellow);width:24px;border-radius:5px}
+
 @media(max-width:1050px){
   .tm-hero-art{opacity:.45}
   .tm-hero-copy{width:70%}
@@ -235,6 +248,8 @@ a{color:inherit}
   .tm-category-grid{grid-template-columns:repeat(2,1fr)}
   .tm-pro-grid{grid-template-columns:1fr}
   .tm-featured{padding-left:18px;padding-right:18px}
+  .tm-banner-ad{padding:0 18px}
+  .tm-banner-container{height:200px}
 }
 @media(max-width:600px){
   .tm-logo-img{width:110px}
