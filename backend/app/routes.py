@@ -5,7 +5,7 @@ from .supabase_client import rest, rpc, auth_user, auth_signup, SupabaseError
 
 main = Blueprint('main', __name__)
 
-PROFESSIONAL_FIELDS = 'id,display_name,city,neighborhood,description,experience_years,rating,total_reviews,verified,category_id,whatsapp'
+PROFESSIONAL_FIELDS = 'id,display_name,city,neighborhood,description,experience_years,rating,total_reviews,verified,category_id,whatsapp,photo_url'
 REQUEST_FIELDS = 'id,professional_id,customer_id,service_title,description,city,address,preferred_date,status,created_at,updated_at'
 VALID_STATUSES = {'requested', 'in_conversation', 'quoted', 'accepted', 'in_progress', 'completed', 'cancelled'}
 PROFESSIONAL_STATUSES = {'pending', 'approved', 'rejected', 'suspended'}
@@ -209,6 +209,11 @@ def api_professional_mine_update():
         if not description:
             return jsonify({'error': 'La descripción no puede estar vacía'}), 400
         data['description'] = description
+    if 'photo_url' in d:
+        photo_url = str(d.get('photo_url', '')).strip()[:500]
+        if not photo_url:
+            return jsonify({'error': 'La URL de la foto no puede estar vacía'}), 400
+        data['photo_url'] = photo_url
     if not data:
         return jsonify({'error': 'Nada para actualizar'}), 400
     try:

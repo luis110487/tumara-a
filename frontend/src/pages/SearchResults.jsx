@@ -53,7 +53,11 @@ export function SearchResults() {
         )}
         {!loading && professionals.map(p => (
           <article className="result-card" key={p.id}>
-            <div className="profile-avatar small">{p.display_name[0]}</div>
+            {p.photo_url ? (
+              <img className="profile-avatar small" src={p.photo_url} alt={p.display_name} style={{ objectFit: 'cover' }} />
+            ) : (
+              <div className="profile-avatar small">{p.display_name[0]}</div>
+            )}
             <div>
               <h2>{p.display_name}</h2>
               <p>{p.category} · {p.city}</p>

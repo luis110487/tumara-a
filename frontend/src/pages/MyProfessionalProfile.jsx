@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiFetch, apiFetchPublic, AuthRequiredError } from '../lib/apiClient';
+import { supabase } from '../lib/supabaseClient';
 import { CityPicker } from '../components/CityPicker';
 import { StatusBadge, PROFESSIONAL_STATUS_LABELS, PROFESSIONAL_STATUS_CLASSES } from '../components/StatusBadge';
 
@@ -24,6 +25,8 @@ export function MyProfessionalProfile() {
   const [editing, setEditing] = useState(false);
   const [msg, setMsg] = useState({ text: '', ok: false });
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [photoMsg, setPhotoMsg] = useState({ text: '', ok: false });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -71,6 +74,31 @@ export function MyProfessionalProfile() {
     }
   }
 
+  async function handlePhotoUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setPhotoMsg({ text: '', ok: false });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${session.user.id}-${Date.now()}.${fileExt}`;
+      const { error } = await supabase.storage.from('avatars').upload(fileName, file, { cacheControl: '3600', upsert: false });
+      if (error) throw error;
+      const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      const updated = await apiFetch('/api/professionals/mine', {
+        method: 'PATCH',
+        body: JSON.stringify({ photo_url: publicData.publicUrl }),
+      });
+      setProfile(updated);
+      setPhotoMsg({ text: 'Foto de perfil actualizada.', ok: true });
+    } catch (err) {
+      setPhotoMsg({ text: `Error al subir la foto: ${err.message}`, ok: false });
+    } finally {
+      setUploading(false);
+    }
+  }
+
   if (loading) return <section className="profile"><p className="loading">Cargando…</p></section>;
 
   if (notFound) {
@@ -89,6 +117,22 @@ export function MyProfessionalProfile() {
     activas: requests.filter(r => ['accepted', 'in_progress'].includes(r.status)),
     finalizadas: requests.filter(r => ['completed', 'cancelled'].includes(r.status)),
   };
+
+  if (profile.status === 'approved' && !profile.photo_url) {
+    return (
+      <section className="profile">
+        <span className="kicker">MI PERFIL PROFESIONAL</span>
+        <h1>¡Tu perfil fue aprobado!</h1>
+        <p>Antes de continuar, sube una foto de perfil. Es obligatoria para que los clientes puedan reconocerte.</p>
+        <div className="form-card" style={{ maxWidth: '420px', marginTop: '20px' }}>
+          <label style={{ fontSize: '12px', fontWeight: 800, display: 'block', marginBottom: '10px' }}>Foto de perfil *</label>
+          <input type="file" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} />
+          {uploading && <p style={{ fontSize: '12px', color: '#0755bd', marginTop: '10px' }}>Subiendo...</p>}
+          {photoMsg.text && <div className={`msg ${photoMsg.ok ? 'ok' : 'error'}`} style={{ marginTop: '12px' }}>{photoMsg.text}</div>}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="results">
@@ -118,6 +162,18 @@ export function MyProfessionalProfile() {
 
       {!editing ? (
         <div className="profile-body" style={{ marginBottom: '30px' }}>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '16px' }}>
+            {profile.photo_url ? (
+              <img src={profile.photo_url} alt={profile.display_name} style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover' }} />
+            ) : (
+              <div className="profile-avatar small">{profile.display_name[0]}</div>
+            )}
+            <label className="link-btn" style={{ cursor: uploading ? 'default' : 'pointer' }}>
+              {uploading ? 'Subiendo...' : 'Cambiar foto'}
+              <input type="file" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} style={{ display: 'none' }} />
+            </label>
+          </div>
+          {photoMsg.text && <div className={`msg ${photoMsg.ok ? 'ok' : 'error'}`} style={{ marginBottom: '14px' }}>{photoMsg.text}</div>}
           <h2>Datos del perfil</h2>
           <p><b>Categoría:</b> {profile.category}</p>
           <p><b>Ciudad:</b> {profile.city}{profile.neighborhood ? ` · ${profile.neighborhood}` : ''}</p>

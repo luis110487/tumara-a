@@ -19,7 +19,11 @@ export function ProfessionalProfile() {
     <section className="profile">
       <Link className="back" to="/buscar">← Volver a resultados</Link>
       <div className="profile-card">
-        <div className="profile-avatar">{p.display_name[0]}</div>
+        {p.photo_url ? (
+          <img className="profile-avatar" src={p.photo_url} alt={p.display_name} style={{ objectFit: 'cover' }} />
+        ) : (
+          <div className="profile-avatar">{p.display_name[0]}</div>
+        )}
         <div>
           <span className="kicker">{p.category}</span>
           <h1>{p.display_name}</h1>

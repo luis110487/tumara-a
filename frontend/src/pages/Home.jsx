@@ -5,6 +5,7 @@ import { CategoryCard } from '../components/CategoryCard';
 import { ProCard } from '../components/ProCard';
 import { CitySelect } from '../components/CitySelect';
 import { BannerAd } from '../components/BannerAd';
+import { useAuth } from '../context/AuthContext';
 
 export function Home() {
   const [categories, setCategories] = useState([]);
@@ -13,6 +14,7 @@ export function Home() {
   const [city, setCity] = useState('');
   const [category, setCategory] = useState('');
   const navigate = useNavigate();
+  const { role } = useAuth();
 
   useEffect(() => {
     apiFetchPublic('/api/categories').then(setCategories).catch(() => setCategories([]));
@@ -55,7 +57,7 @@ export function Home() {
         </form>
         <div className="tm-actions">
           <a className="tm-btn tm-primary" href="/buscar">▣ Buscar un profesional</a>
-          <a className="tm-btn tm-outline" href="/registrar">♙ Soy profesional</a>
+          {role !== 'professional' && <a className="tm-btn tm-outline" href="/registrar">♙ Soy profesional</a>}
         </div>
       </section>
 

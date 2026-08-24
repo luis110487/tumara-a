@@ -3,7 +3,11 @@ import { Link } from 'react-router-dom';
 export function ProCard({ p }) {
   return (
     <article className="tm-pro-card">
-      <div className="tm-avatar">{p.display_name[0]}</div>
+      {p.photo_url ? (
+        <img className="tm-avatar" src={p.photo_url} alt={p.display_name} style={{ objectFit: 'cover' }} />
+      ) : (
+        <div className="tm-avatar">{p.display_name[0]}</div>
+      )}
       <div className="tm-pro-info">
         <h3>{p.display_name}</h3>
         <p>{p.category}{p.city ? ` · ${p.city}` : ''}</p>

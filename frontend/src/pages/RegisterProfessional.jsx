@@ -1,17 +1,32 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { apiFetch, apiFetchPublic, AuthRequiredError } from '../lib/apiClient';
 import { CityPicker } from '../components/CityPicker';
+import { useAuth } from '../context/AuthContext';
 
 export function RegisterProfessional() {
   const [categories, setCategories] = useState([]);
   const [msg, setMsg] = useState({ text: '', ok: false });
   const [formKey, setFormKey] = useState(0);
   const navigate = useNavigate();
+  const { role, profileLoading } = useAuth();
 
   useEffect(() => {
     apiFetchPublic('/api/categories').then(setCategories).catch(() => setCategories([]));
   }, []);
+
+  if (!profileLoading && role === 'professional') {
+    return (
+      <section className="account">
+        <div>
+          <span className="kicker">PROFESIONALES</span>
+          <h1>Ya tienes un perfil profesional</h1>
+          <p>Puedes ver o editar tu perfil desde "Mi perfil profesional" en el menú.</p>
+          <Link className="btn primary" to="/mi-perfil-profesional">Ir a mi perfil profesional</Link>
+        </div>
+      </section>
+    );
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
