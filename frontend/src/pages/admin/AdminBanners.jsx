@@ -104,6 +104,7 @@ export function AdminBanners() {
   if (loading) return <div className="loading">Cargando banners...</div>;
 
   const atLimit = banners.length >= 3 && !editingId;
+  const editingBanner = editingId ? banners.find(b => b.id === editingId) : null;
 
   return (
     <div>
@@ -116,8 +117,8 @@ export function AdminBanners() {
           Ya tienes 3 banners creados, el máximo permitido. Elimina uno de la lista para poder crear otro.
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="admin-edit-form" style={{ maxWidth: '500px', marginBottom: '30px' }}>
-          <label>Título (opcional)<input name="title" maxLength={200} /></label>
+        <form onSubmit={handleSubmit} className="admin-edit-form" style={{ maxWidth: '500px', marginBottom: '30px' }} key={editingId || 'new'}>
+          <label>Título (opcional)<input name="title" defaultValue={editingBanner?.title || ''} maxLength={200} /></label>
 
           <div style={{ border: '1px dashed #d6e0e9', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
             <label style={{ display: 'block', marginBottom: '12px', fontWeight: 800, fontSize: '12px' }}>
@@ -133,17 +134,17 @@ export function AdminBanners() {
             {uploading && <p style={{ fontSize: '12px', color: '#0755bd', marginTop: '8px' }}>Subiendo...</p>}
           </div>
 
-          <label>O pegar URL de imagen<input name="image_url" maxLength={500} placeholder="https://..." /></label>
-          {preview && (
+          <label>O pegar URL de imagen<input name="image_url" defaultValue={editingBanner?.image_url || ''} maxLength={500} placeholder="https://..." /></label>
+          {(preview || editingBanner?.image_url) && (
             <div style={{ marginBottom: '12px', borderRadius: '8px', overflow: 'hidden', maxHeight: '200px' }}>
-              <img src={preview} alt="Preview" style={{ width: '100%', height: 'auto', maxHeight: '200px', objectFit: 'cover' }} />
+              <img src={preview || editingBanner.image_url} alt="Preview" style={{ width: '100%', height: 'auto', maxHeight: '200px', objectFit: 'cover' }} />
             </div>
           )}
 
-          <label>Link (opcional)<input name="link" maxLength={500} placeholder="https://..." /></label>
-          <label>Posición<input name="position" type="number" defaultValue="0" /></label>
+          <label>Link (opcional)<input name="link" defaultValue={editingBanner?.link || ''} maxLength={500} placeholder="https://..." /></label>
+          <label>Posición<input name="position" type="number" defaultValue={editingBanner?.position ?? 0} /></label>
           <label style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <input name="is_active" type="checkbox" defaultChecked style={{ width: 'auto' }} />
+            <input name="is_active" type="checkbox" defaultChecked={editingBanner ? editingBanner.is_active : true} style={{ width: 'auto' }} />
             <span>Activo</span>
           </label>
           <button className="btn primary" type="submit" disabled={uploading}>{editingId ? 'Guardar cambios' : 'Crear banner'}</button>
@@ -170,7 +171,7 @@ export function AdminBanners() {
                 </p>
               </div>
               <div className="admin-row-actions">
-                <button className="btn outline" type="button" onClick={() => setEditingId(b.id)}>Editar</button>
+                <button className="btn outline" type="button" onClick={() => { setEditingId(b.id); setPreview(null); }}>Editar</button>
                 <button className="btn outline" type="button" onClick={() => handleDelete(b.id)}>Eliminar</button>
               </div>
             </div>
