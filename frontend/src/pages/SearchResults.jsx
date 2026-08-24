@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { apiFetchPublic } from '../lib/apiClient';
+import { CitySelect } from '../components/CitySelect';
 
 export function SearchResults() {
   const [params, setParams] = useSearchParams();
@@ -38,7 +39,7 @@ export function SearchResults() {
       <div className="results-head"><span className="kicker">DIRECTORIO</span><h1>Encuentra el profesional que necesitas</h1></div>
       <form className="filters" onSubmit={e => e.preventDefault()}>
         <input defaultValue={q} onBlur={e => updateParam('q', e.target.value)} placeholder="Servicio o profesional" />
-        <input defaultValue={city} onBlur={e => updateParam('city', e.target.value)} placeholder="Ciudad" />
+        <CitySelect value={city} onChange={v => updateParam('city', v)} placeholder="Ciudad" />
         <select value={category} onChange={e => updateParam('category', e.target.value)}>
           <option value="">Todas las categorías</option>
           {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}

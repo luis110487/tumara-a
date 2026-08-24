@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiFetch, apiFetchPublic, AuthRequiredError } from '../lib/apiClient';
+import { CityPicker } from '../components/CityPicker';
 
 export function RequestService() {
   const { id } = useParams();
@@ -48,10 +49,8 @@ export function RequestService() {
         <form onSubmit={handleSubmit}>
           <label>Servicio solicitado<input name="title" required maxLength={200} defaultValue={`${p.category} — solicitud`} /></label>
           <label>Descripción<textarea name="description" rows={6} maxLength={5000} required placeholder="¿Qué necesitas que haga el profesional?" /></label>
-          <div className="two">
-            <label>Ciudad<input name="city" maxLength={100} defaultValue={p.city} /></label>
-            <label>Dirección / zona<input name="address" maxLength={250} /></label>
-          </div>
+          <CityPicker name="city" value={p.city} />
+          <label>Dirección / zona<input name="address" maxLength={250} /></label>
           <label>Fecha y horario preferido<input name="date" type="datetime-local" /></label>
           <button className="btn primary" type="submit">Enviar solicitud y abrir chat</button>
         </form>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiFetchPublic } from '../lib/apiClient';
 import { CategoryCard } from '../components/CategoryCard';
 import { ProCard } from '../components/ProCard';
+import { CitySelect } from '../components/CitySelect';
 
 export function Home() {
   const [categories, setCategories] = useState([]);
@@ -43,7 +44,7 @@ export function Home() {
           <div className="tm-field"><span>⌕</span><div><small>¿QUÉ SERVICIO NECESITAS?</small>
             <input value={q} onChange={e => setQ(e.target.value)} placeholder="Ej. Plomero, Electricista, Pintor" /></div></div>
           <div className="tm-field"><span>⌖</span><div><small>UBICACIÓN</small>
-            <input value={city} onChange={e => setCity(e.target.value)} placeholder="Tu ciudad o zona" /></div></div>
+            <CitySelect value={city} onChange={setCity} placeholder="Tu ciudad o zona" /></div></div>
           <div className="tm-field"><span>⌄</span><div><small>CATEGORÍA</small>
             <select value={category} onChange={e => setCategory(e.target.value)}>
               <option value="">Todas las categorías</option>

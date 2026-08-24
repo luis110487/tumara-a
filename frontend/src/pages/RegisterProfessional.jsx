@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch, apiFetchPublic, AuthRequiredError } from '../lib/apiClient';
+import { CityPicker } from '../components/CityPicker';
 
 export function RegisterProfessional() {
   const [categories, setCategories] = useState([]);
   const [msg, setMsg] = useState({ text: '', ok: false });
+  const [formKey, setFormKey] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,6 +31,7 @@ export function RegisterProfessional() {
       });
       setMsg({ text: 'Perfil enviado para aprobación.', ok: true });
       f.reset();
+      setFormKey(k => k + 1);
     } catch (err) {
       if (err instanceof AuthRequiredError) return navigate('/cuenta');
       setMsg({ text: err.message, ok: false });
@@ -48,17 +51,15 @@ export function RegisterProfessional() {
         </ul>
       </div>
       <div className="form-card">
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} key={formKey}>
           <label>Nombre comercial<input name="name" required maxLength={150} /></label>
           <label>Categoría
             <select name="category" required>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </label>
-          <div className="two">
-            <label>Ciudad<input name="city" required maxLength={100} /></label>
-            <label>Barrio<input name="neighborhood" maxLength={100} /></label>
-          </div>
+          <CityPicker name="city" required />
+          <label>Barrio<input name="neighborhood" maxLength={100} /></label>
           <label>WhatsApp (opcional)<input name="whatsapp" placeholder="573001234567" maxLength={20} /></label>
           <label>Años de experiencia<input name="experience" type="number" min="0" max="80" defaultValue="0" /></label>
           <label>Descripción<textarea name="description" rows={6} maxLength={3000} required /></label>
