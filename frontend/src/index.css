@@ -21,10 +21,8 @@ a{color:inherit}
 
 /* Footer */
 .site-footer{background:var(--tm-navy);color:#fff;margin-top:60px}
-.footer-inner{max-width:1160px;margin:auto;padding:34px 20px;display:flex;align-items:center;gap:20px}
-.footer-inner .tm-logo{background:#fff;padding:10px 16px;border-radius:12px}
-.footer-credit{text-align:center;padding:10px 20px 22px;font-size:10px;color:#7f92ac;border-top:1px solid #12305e}
-.footer-inner span{margin-left:auto;font-size:10px;color:#aebed0}
+.footer-credit{text-align:center;padding:22px 20px;font-size:11px;color:#aebed0}
+.footer-credit a{color:#aebed0}
 
 /* Hero */
 .tm-hero{max-width:1240px;margin:auto;padding:62px 42px 28px;position:relative;min-height:590px;overflow:hidden}
@@ -231,7 +229,6 @@ a{color:inherit}
   .profile-card{grid-template-columns:75px 1fr}
   .profile-card>.profile-actions{grid-column:1/-1}
   .steps{grid-template-columns:1fr}
-  .footer-inner{flex-wrap:wrap}
 }
 @media(max-width:700px){
   .tm-hero{padding:40px 18px 25px;min-height:780px}
