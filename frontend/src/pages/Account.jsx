@@ -10,6 +10,7 @@ export function Account() {
   const [categories, setCategories] = useState([]);
   const [msg, setMsg] = useState({ text: '', ok: false });
   const [showRecover, setShowRecover] = useState(false);
+  const [done, setDone] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,9 +52,9 @@ export function Account() {
     }
 
     if (!data.session) {
-      setMsg({
-        text: 'Cuenta creada. Confirma tu correo, inicia sesión y completa tu registro profesional desde "Soy profesional" en el menú.',
-        ok: true,
+      setDone({
+        title: 'Cuenta creada',
+        text: 'Confirma tu correo e inicia sesión para completar tu registro profesional.',
       });
       return;
     }
@@ -71,10 +72,12 @@ export function Account() {
           whatsapp: f.whatsapp.value.trim(),
         }),
       });
-      setMsg({ text: 'Cuenta creada y perfil profesional enviado para aprobación por un administrador.', ok: true });
-      navigate('/');
+      setDone({
+        title: 'Registro enviado',
+        text: 'Tu cuenta y perfil profesional fueron creados. Tu perfil está en espera de aprobación por un administrador antes de aparecer públicamente.',
+      });
     } catch (err) {
-      setMsg({ text: `Tu cuenta quedó creada, pero no pudimos enviar tu perfil profesional (${err.message}). Puedes completarlo desde "Soy profesional" en el menú.`, ok: false });
+      setMsg({ text: `Tu cuenta quedó creada, pero no pudimos enviar tu perfil profesional (${err.message}).`, ok: false });
     }
   }
 
@@ -102,7 +105,13 @@ export function Account() {
             El servidor todavía no tiene configurado Supabase (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY). El login y registro no funcionarán hasta que se configure.
           </div>
         )}
-        {showRecover ? (
+        {done ? (
+          <>
+            <h2 className="requests-subhead">{done.title}</h2>
+            <p style={{ color: 'var(--tm-muted)', lineHeight: 1.6 }}>{done.text}</p>
+            <button className="btn primary" type="button" onClick={() => navigate('/')} style={{ marginTop: '16px' }}>Ir al inicio</button>
+          </>
+        ) : showRecover ? (
           <>
             <h2 className="requests-subhead">Recuperar contraseña</h2>
             <form onSubmit={handleRecover}>
