@@ -45,3 +45,13 @@ def auth_user(token):
     url, _ = cfg()
     r = requests.get(f'{url}/auth/v1/user', headers=headers(token), timeout=10)
     return r.json() if r.status_code == 200 else None
+
+def auth_signup(email, password, full_name=None):
+    url, _ = cfg()
+    payload = {'email': email, 'password': password}
+    if full_name:
+        payload['data'] = {'full_name': full_name}
+    r = requests.post(f'{url}/auth/v1/signup', headers=headers(), json=payload, timeout=15)
+    if r.status_code >= 400:
+        raise SupabaseError(f'Supabase Auth {r.status_code}: {r.text[:800]}')
+    return r.json() if r.text else {}

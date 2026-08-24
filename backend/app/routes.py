@@ -1,7 +1,7 @@
 import re
 
 from flask import Blueprint, request, jsonify, abort
-from .supabase_client import rest, rpc, auth_user, SupabaseError
+from .supabase_client import rest, rpc, auth_user, auth_signup, SupabaseError
 
 main = Blueprint('main', __name__)
 
@@ -374,6 +374,28 @@ def admin_set_user_active(user_id):
         return jsonify(rows[0])
     except SupabaseError as e:
         return api_error(e)
+
+
+@main.post('/api/admin/users/create-admin')
+def admin_create_admin_user():
+    token, _ = require_admin()
+    d = request.get_json(silent=True) or {}
+    full_name = str(d.get('full_name', '')).strip()[:150]
+    email = str(d.get('email', '')).strip().lower()[:200]
+    password = str(d.get('password', ''))
+    if not full_name or not email or '@' not in email:
+        return jsonify({'error': 'Nombre y email válidos son obligatorios'}), 400
+    if len(password) < 8:
+        return jsonify({'error': 'La contraseña debe tener al menos 8 caracteres'}), 400
+    try:
+        auth_signup(email, password, full_name)
+    except SupabaseError as e:
+        return api_error(e)
+    try:
+        result = rpc('promote_to_admin', {'p_email': email}, token)
+        return jsonify(result), 201
+    except SupabaseError as e:
+        return jsonify({'warning': 'La cuenta se creó pero no se pudo promover a admin automáticamente', 'detail': str(e)}), 207
 
 
 @main.post('/api/admin/users/promote')

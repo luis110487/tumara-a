@@ -7,6 +7,7 @@ export function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [promoteMsg, setPromoteMsg] = useState({ text: '', ok: false });
+  const [createMsg, setCreateMsg] = useState({ text: '', ok: false });
 
   function load() {
     setLoading(true);
@@ -33,6 +34,24 @@ export function AdminUsers() {
     }
   }
 
+  async function handleCreateAdmin(e) {
+    e.preventDefault();
+    const f = e.target;
+    const email = f.email.value.trim();
+    setCreateMsg({ text: '', ok: false });
+    try {
+      await apiFetch('/api/admin/users/create-admin', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: f.full_name.value.trim(), email, password: f.password.value }),
+      });
+      setCreateMsg({ text: `Cuenta admin creada para ${email}. Si tu proyecto exige confirmar el correo, esa persona debe hacerlo antes de iniciar sesión.`, ok: true });
+      f.reset();
+      load();
+    } catch (err) {
+      setCreateMsg({ text: err.message, ok: false });
+    }
+  }
+
   async function toggleActive(u) {
     setError('');
     try {
@@ -46,8 +65,20 @@ export function AdminUsers() {
   return (
     <div>
       <div className="form-card admin-promote-card">
+        <h2 className="requests-subhead">Crear cuenta de administrador</h2>
+        <form className="admin-inline-form" onSubmit={handleCreateAdmin}>
+          <input name="full_name" placeholder="Nombre completo" required maxLength={150} />
+          <input name="email" type="email" placeholder="correo@ejemplo.com" required />
+          <input name="password" type="password" placeholder="Contraseña (mín. 8 caracteres)" required minLength={8} />
+          <button className="btn primary" type="submit">Crear administrador</button>
+        </form>
+        {createMsg.text && <div className={`msg ${createMsg.ok ? 'ok' : 'error'}`}>{createMsg.text}</div>}
+      </div>
+
+      <div className="form-card admin-promote-card">
+        <h2 className="requests-subhead">Promover una cuenta existente a admin</h2>
         <form className="admin-promote-form" onSubmit={handlePromote}>
-          <label>Promover a admin por email<input name="email" type="email" placeholder="usuario@correo.com" required /></label>
+          <label>Email<input name="email" type="email" placeholder="usuario@correo.com" required /></label>
           <button className="btn primary" type="submit">Promover</button>
         </form>
         {promoteMsg.text && <div className={`msg ${promoteMsg.ok ? 'ok' : 'error'}`}>{promoteMsg.text}</div>}
