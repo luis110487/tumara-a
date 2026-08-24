@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../../lib/apiClient';
+import { supabase } from '../../lib/supabaseClient';
 
 export function AdminBanners() {
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [msg, setMsg] = useState({ text: '', ok: false });
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState(null);
 
   useEffect(() => {
     loadBanners();
@@ -22,12 +25,49 @@ export function AdminBanners() {
     }
   }
 
+  async function handleFileUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setMsg({ text: '', ok: false });
+
+    try {
+      const fileName = `banner-${Date.now()}-${file.name}`;
+      const { error, data } = await supabase.storage
+        .from('banners')
+        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+      if (error) throw error;
+
+      const { data: publicData } = supabase.storage
+        .from('banners')
+        .getPublicUrl(fileName);
+
+      const imageUrl = publicData.publicUrl;
+      document.querySelector('input[name="image_url"]').value = imageUrl;
+      setPreview(imageUrl);
+      setMsg({ text: 'Imagen subida correctamente', ok: true });
+    } catch (err) {
+      setMsg({ text: `Error al subir: ${err.message}`, ok: false });
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     const f = e.target;
+    const imageUrl = f.image_url.value.trim();
+
+    if (!imageUrl) {
+      setMsg({ text: 'Debes ingresar o subir una imagen', ok: false });
+      return;
+    }
+
     const formData = {
       title: f.title.value.trim(),
-      image_url: f.image_url.value.trim(),
+      image_url: imageUrl,
       link: f.link.value.trim(),
       position: parseInt(f.position.value) || 0,
       is_active: f.is_active.checked,
@@ -42,6 +82,7 @@ export function AdminBanners() {
         setMsg({ text: 'Banner creado correctamente', ok: true });
       }
       setEditingId(null);
+      setPreview(null);
       f.reset();
       await loadBanners();
     } catch (err) {
@@ -67,15 +108,36 @@ export function AdminBanners() {
       <h2 className="requests-subhead">Crear / Editar Banner</h2>
       <form onSubmit={handleSubmit} className="admin-edit-form" style={{ maxWidth: '500px', marginBottom: '30px' }}>
         <label>Título (opcional)<input name="title" maxLength={200} /></label>
-        <label>URL de imagen *<input name="image_url" required maxLength={500} placeholder="https://..." /></label>
+
+        <div style={{ border: '1px dashed #d6e0e9', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
+          <label style={{ display: 'block', marginBottom: '12px', fontWeight: 800, fontSize: '12px' }}>
+            Subir imagen
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileUpload}
+            disabled={uploading}
+            style={{ width: '100%' }}
+          />
+          {uploading && <p style={{ fontSize: '12px', color: '#0755bd', marginTop: '8px' }}>Subiendo...</p>}
+        </div>
+
+        <label>O pegar URL de imagen<input name="image_url" maxLength={500} placeholder="https://..." /></label>
+        {preview && (
+          <div style={{ marginBottom: '12px', borderRadius: '8px', overflow: 'hidden', maxHeight: '200px' }}>
+            <img src={preview} alt="Preview" style={{ width: '100%', height: 'auto', maxHeight: '200px', objectFit: 'cover' }} />
+          </div>
+        )}
+
         <label>Link (opcional)<input name="link" maxLength={500} placeholder="https://..." /></label>
         <label>Posición<input name="position" type="number" defaultValue="0" /></label>
         <label style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <input name="is_active" type="checkbox" defaultChecked style={{ width: 'auto' }} />
           <span>Activo</span>
         </label>
-        <button className="btn primary" type="submit">{editingId ? 'Guardar cambios' : 'Crear banner'}</button>
-        {editingId && <button className="btn outline" type="button" onClick={() => setEditingId(null)}>Cancelar</button>}
+        <button className="btn primary" type="submit" disabled={uploading}>{editingId ? 'Guardar cambios' : 'Crear banner'}</button>
+        {editingId && <button className="btn outline" type="button" onClick={() => { setEditingId(null); setPreview(null); }}>Cancelar</button>}
       </form>
 
       {msg.text && <div className={`msg ${msg.ok ? 'ok' : 'error'}`} style={{ marginBottom: '20px' }}>{msg.text}</div>}
