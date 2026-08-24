@@ -651,6 +651,12 @@ def admin_create_banner():
     if not image_url:
         return jsonify({'error': 'URL de imagen es obligatoria'}), 400
     try:
+        existing, total = rest('banners', {'select': 'id'}, token=token, with_count=True)
+    except SupabaseError as e:
+        return api_error(e)
+    if (total or len(existing)) >= 3:
+        return jsonify({'error': 'Solo se permiten un máximo de 3 banners. Elimina uno antes de crear otro.'}), 400
+    try:
         rows = rest('banners', method='POST', data={
             'title': str(d.get('title', '')).strip()[:200] or None,
             'image_url': image_url,
