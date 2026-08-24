@@ -104,6 +104,10 @@ a{color:inherit}
 .tabs a{border:0;background:none;padding:10px 14px;font-weight:800;color:#7a8796;text-decoration:none}
 .tabs a.active{color:var(--tm-blue);border-bottom:2px solid var(--tm-yellow)}
 .link-btn{border:0;background:none;color:var(--tm-blue);font-size:12px;font-weight:800;cursor:pointer;padding:0;text-align:left}
+.signup-type{display:flex;gap:8px;margin-bottom:16px}
+.signup-type button{flex:1;border:1px solid var(--tm-line);border-radius:8px;padding:10px;font-weight:800;font-size:12px;color:#7a8796;background:#fff;cursor:pointer}
+.signup-type button.active{border-color:var(--tm-blue);color:var(--tm-blue);background:#eaf1fb}
+.signup-hint{font-size:11px;color:var(--tm-muted);margin:0;line-height:1.5}
 .msg{min-height:18px;margin-top:12px;font-size:12px}
 .msg.error{color:#b42318}
 .msg.ok{color:#177245}
