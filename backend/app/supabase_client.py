@@ -55,3 +55,22 @@ def auth_signup(email, password, full_name=None):
     if r.status_code >= 400:
         raise SupabaseError(f'Supabase Auth {r.status_code}: {r.text[:800]}')
     return r.json() if r.text else {}
+
+def admin_headers():
+    url = os.environ.get('SUPABASE_URL', '').rstrip('/')
+    service_key = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
+    if not url or not service_key:
+        raise SupabaseError('SUPABASE_SERVICE_ROLE_KEY no está configurada en el servidor')
+    return url, {
+        'apikey': service_key,
+        'Authorization': f'Bearer {service_key}',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    }
+
+def auth_admin_set_password(user_id, new_password):
+    url, h = admin_headers()
+    r = requests.put(f'{url}/auth/v1/admin/users/{user_id}', headers=h, json={'password': new_password}, timeout=15)
+    if r.status_code >= 400:
+        raise SupabaseError(f'Supabase Admin {r.status_code}: {r.text[:800]}')
+    return r.json() if r.text else {}

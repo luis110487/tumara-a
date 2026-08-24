@@ -1,7 +1,9 @@
 import re
+import secrets
+import string
 
 from flask import Blueprint, request, jsonify, abort
-from .supabase_client import rest, rpc, auth_user, auth_signup, SupabaseError
+from .supabase_client import rest, rpc, auth_user, auth_signup, auth_admin_set_password, SupabaseError
 
 main = Blueprint('main', __name__)
 
@@ -484,6 +486,18 @@ def admin_update_user(user_id):
         return jsonify(rows[0])
     except SupabaseError as e:
         return api_error(e)
+
+
+@main.post('/api/admin/users/<uuid:user_id>/reset-password')
+def admin_reset_user_password(user_id):
+    require_admin()
+    alphabet = string.ascii_letters + string.digits
+    new_password = ''.join(secrets.choice(alphabet) for _ in range(12))
+    try:
+        auth_admin_set_password(str(user_id), new_password)
+    except SupabaseError as e:
+        return api_error(e)
+    return jsonify({'new_password': new_password})
 
 
 @main.post('/api/admin/users/create-admin')

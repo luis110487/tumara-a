@@ -10,6 +10,7 @@ export function AdminUsers() {
   const [createMsg, setCreateMsg] = useState({ text: '', ok: false });
   const [editingId, setEditingId] = useState(null);
   const [editMsg, setEditMsg] = useState({ text: '', ok: false });
+  const [resetResult, setResetResult] = useState(null);
 
   function load() {
     setLoading(true);
@@ -64,6 +65,17 @@ export function AdminUsers() {
     }
   }
 
+  async function handleResetPassword(u) {
+    if (!confirm(`¿Generar una nueva contraseña para ${u.full_name}? La contraseña actual dejará de funcionar.`)) return;
+    setError('');
+    try {
+      const result = await apiFetch(`/api/admin/users/${u.id}/reset-password`, { method: 'POST' });
+      setResetResult({ user: u.full_name, password: result.new_password });
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   async function handleEditUser(e) {
     e.preventDefault();
     const f = e.target;
@@ -107,6 +119,18 @@ export function AdminUsers() {
         </form>
         {promoteMsg.text && <div className={`msg ${promoteMsg.ok ? 'ok' : 'error'}`}>{promoteMsg.text}</div>}
       </div>
+
+      {resetResult && (
+        <div className="form-card admin-promote-card">
+          <h2 className="requests-subhead">Nueva contraseña generada</h2>
+          <p>Contraseña para <b>{resetResult.user}</b>:</p>
+          <p style={{ fontSize: '20px', fontWeight: 900, letterSpacing: '1px', background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--tm-line)', display: 'inline-block' }}>
+            {resetResult.password}
+          </p>
+          <p style={{ fontSize: '12px', color: 'var(--tm-muted)', marginTop: '8px' }}>Cópiala y compártela con el usuario por un canal seguro (WhatsApp, en persona, etc). No se volverá a mostrar.</p>
+          <button className="btn outline" type="button" onClick={() => setResetResult(null)} style={{ marginTop: '10px' }}>Cerrar</button>
+        </div>
+      )}
 
       {editingId && (
         <div className="form-card admin-promote-card">
@@ -160,6 +184,7 @@ export function AdminUsers() {
               </span>
               <div className="admin-row-actions">
                 <button className="btn outline" onClick={() => setEditingId(u.id)}>Editar</button>
+                <button className="btn outline" onClick={() => handleResetPassword(u)}>Nueva contraseña</button>
                 <button className="btn outline" onClick={() => toggleActive(u)}>{u.is_active ? 'Desactivar' : 'Activar'}</button>
               </div>
             </article>
