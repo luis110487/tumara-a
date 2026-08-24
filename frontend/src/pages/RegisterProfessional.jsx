@@ -28,6 +28,19 @@ export function RegisterProfessional() {
     );
   }
 
+  if (!profileLoading && role === 'admin') {
+    return (
+      <section className="account">
+        <div>
+          <span className="kicker">PROFESIONALES</span>
+          <h1>Esta opción no está disponible para administradores</h1>
+          <p>Las cuentas de administrador no pueden registrar un perfil profesional.</p>
+          <Link className="btn primary" to="/">Volver al inicio</Link>
+        </div>
+      </section>
+    );
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     const f = e.target;

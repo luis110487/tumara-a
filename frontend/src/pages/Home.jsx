@@ -57,7 +57,7 @@ export function Home() {
         </form>
         <div className="tm-actions">
           <a className="tm-btn tm-primary" href="/buscar">▣ Buscar un profesional</a>
-          {role !== 'professional' && <a className="tm-btn tm-outline" href="/registrar">♙ Soy profesional</a>}
+          {role !== 'professional' && role !== 'admin' && <a className="tm-btn tm-outline" href="/registrar">♙ Soy profesional</a>}
         </div>
       </section>
 
