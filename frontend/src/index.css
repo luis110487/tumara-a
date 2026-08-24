@@ -103,6 +103,7 @@ a{color:inherit}
 .tabs button.active{color:var(--tm-blue);border-bottom:2px solid var(--tm-yellow)}
 .tabs a{border:0;background:none;padding:10px 14px;font-weight:800;color:#7a8796;text-decoration:none}
 .tabs a.active{color:var(--tm-blue);border-bottom:2px solid var(--tm-yellow)}
+.link-btn{border:0;background:none;color:var(--tm-blue);font-size:12px;font-weight:800;cursor:pointer;padding:0;text-align:left}
 .msg{min-height:18px;margin-top:12px;font-size:12px}
 .msg.error{color:#b42318}
 .msg.ok{color:#177245}
@@ -149,8 +150,17 @@ a{color:inherit}
 .admin-row-actions .btn{padding:8px 12px;font-size:11px}
 .admin-toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
 .admin-toolbar select,.admin-toolbar input{border:1px solid var(--tm-line);border-radius:8px;padding:9px 12px;font:inherit}
-.admin-inline-form{display:grid;grid-template-columns:1fr 1fr 90px 1fr auto;gap:8px;margin-bottom:22px}
+.admin-inline-form{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:10px;padding:16px;border:1px solid var(--tm-line);border-radius:12px;background:#f8fafc}
 .admin-inline-form input{border:1px solid var(--tm-line);border-radius:8px;padding:10px;font:inherit}
+.admin-inline-form .icon-picker-field{grid-column:1/-1}
+.admin-edit-form{display:flex;flex-direction:column;gap:8px;flex:1;min-width:220px}
+.admin-edit-form input{border:1px solid var(--tm-line);border-radius:8px;padding:9px;font:inherit;font-size:12px}
+.icon-picker-field{margin-top:6px}
+.icon-picker-current{display:block;font-size:11px;color:var(--tm-muted);margin-bottom:6px;font-weight:800}
+.icon-picker{display:flex;flex-wrap:wrap;gap:6px}
+.icon-picker-item{width:34px;height:34px;border:1px solid var(--tm-line);border-radius:8px;background:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.icon-picker-item.selected{border-color:var(--tm-blue);background:#eaf1fb}
+.icon-picker-item:hover{border-color:#bfcfe1}
 .role-badge{font-size:9px;font-weight:800;border-radius:12px;padding:4px 8px;background:#e6eaf4;color:#26407a}
 .role-badge.admin{background:#fef3dd;color:#a06600}
 .admin-promote-card{margin-bottom:24px}

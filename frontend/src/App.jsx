@@ -7,6 +7,7 @@ import { SearchResults } from './pages/SearchResults';
 import { ProfessionalProfile } from './pages/ProfessionalProfile';
 import { RegisterProfessional } from './pages/RegisterProfessional';
 import { Account } from './pages/Account';
+import { ResetPassword } from './pages/ResetPassword';
 import { RequestService } from './pages/RequestService';
 import { Chat } from './pages/Chat';
 import { MyRequests } from './pages/MyRequests';
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/profesional/:id" element={<ProfessionalProfile />} />
         <Route path="/registrar" element={<ProtectedRoute><RegisterProfessional /></ProtectedRoute>} />
         <Route path="/cuenta" element={<Account />} />
+        <Route path="/restablecer-contrasena" element={<ResetPassword />} />
         <Route path="/solicitar/:id" element={<ProtectedRoute><RequestService /></ProtectedRoute>} />
         <Route path="/solicitud/:id/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
         <Route path="/mis-solicitudes" element={<ProtectedRoute><MyRequests /></ProtectedRoute>} />

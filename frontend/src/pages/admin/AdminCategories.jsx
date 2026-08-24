@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../../lib/apiClient';
+import { IconPicker } from '../../components/IconPicker';
+
+const EMPTY_FORM = { name: '', slug: '', icon: '', description: '' };
 
 export function AdminCategories() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
+  const [createForm, setCreateForm] = useState(EMPTY_FORM);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState(EMPTY_FORM);
 
   function load() {
     setLoading(true);
@@ -19,21 +25,28 @@ export function AdminCategories() {
 
   async function handleCreate(e) {
     e.preventDefault();
-    const f = e.target;
     setError('');
     setMsg('');
     try {
-      await apiFetch('/api/admin/categories', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: f.name.value.trim(),
-          slug: f.slug.value.trim(),
-          icon: f.icon.value.trim(),
-          description: f.description.value.trim(),
-        }),
-      });
-      f.reset();
+      await apiFetch('/api/admin/categories', { method: 'POST', body: JSON.stringify(createForm) });
+      setCreateForm(EMPTY_FORM);
       setMsg('Categoría creada.');
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  function startEdit(c) {
+    setEditingId(c.id);
+    setEditForm({ name: c.name, slug: c.slug, icon: c.icon || '', description: c.description || '' });
+  }
+
+  async function saveEdit(id) {
+    setError('');
+    try {
+      await apiFetch(`/api/admin/categories/${id}`, { method: 'PATCH', body: JSON.stringify(editForm) });
+      setEditingId(null);
       load();
     } catch (err) {
       setError(err.message);
@@ -43,10 +56,7 @@ export function AdminCategories() {
   async function toggle(c) {
     setError('');
     try {
-      await apiFetch(`/api/admin/categories/${c.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ is_active: !c.is_active }),
-      });
+      await apiFetch(`/api/admin/categories/${c.id}`, { method: 'PATCH', body: JSON.stringify({ is_active: !c.is_active }) });
       load();
     } catch (err) {
       setError(err.message);
@@ -56,11 +66,14 @@ export function AdminCategories() {
   return (
     <div>
       <form className="admin-inline-form" onSubmit={handleCreate}>
-        <input name="name" placeholder="Nombre" required maxLength={100} />
-        <input name="slug" placeholder="slug-en-minusculas" required maxLength={100} pattern="[a-z0-9-]+" />
-        <input name="icon" placeholder="Icono (emoji)" maxLength={50} />
-        <input name="description" placeholder="Descripción (opcional)" maxLength={500} />
+        <input placeholder="Nombre" required maxLength={100} value={createForm.name} onChange={e => setCreateForm({ ...createForm, name: e.target.value })} />
+        <input placeholder="slug-en-minusculas" required maxLength={100} pattern="[a-z0-9-]+" value={createForm.slug} onChange={e => setCreateForm({ ...createForm, slug: e.target.value })} />
+        <input placeholder="Descripción (opcional)" maxLength={500} value={createForm.description} onChange={e => setCreateForm({ ...createForm, description: e.target.value })} />
         <button className="btn primary" type="submit">Crear</button>
+        <div className="icon-picker-field">
+          <span className="icon-picker-current">{createForm.icon || 'Elige un icono'}</span>
+          <IconPicker value={createForm.icon} onChange={icon => setCreateForm({ ...createForm, icon })} />
+        </div>
       </form>
       {error && <div className="msg error">{error}</div>}
       {msg && <div className="msg ok">{msg}</div>}
@@ -68,16 +81,37 @@ export function AdminCategories() {
         <div className="admin-list">
           {categories.map(c => (
             <article className="admin-row" key={c.id}>
-              <div>
-                <h3>{c.icon} {c.name}</h3>
-                <p>{c.slug}{c.description ? ` · ${c.description}` : ''}</p>
-              </div>
-              <span className={`status-pill ${c.is_active ? 'tm-status-active' : 'tm-status-cancelled'}`}>
-                ● {c.is_active ? 'Activa' : 'Inactiva'}
-              </span>
-              <div className="admin-row-actions">
-                <button className="btn outline" onClick={() => toggle(c)}>{c.is_active ? 'Desactivar' : 'Activar'}</button>
-              </div>
+              {editingId === c.id ? (
+                <>
+                  <div className="admin-edit-form">
+                    <input value={editForm.name} maxLength={100} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
+                    <input value={editForm.slug} maxLength={100} pattern="[a-z0-9-]+" onChange={e => setEditForm({ ...editForm, slug: e.target.value })} />
+                    <input value={editForm.description} maxLength={500} placeholder="Descripción" onChange={e => setEditForm({ ...editForm, description: e.target.value })} />
+                    <div className="icon-picker-field">
+                      <span className="icon-picker-current">{editForm.icon || 'Elige un icono'}</span>
+                      <IconPicker value={editForm.icon} onChange={icon => setEditForm({ ...editForm, icon })} />
+                    </div>
+                  </div>
+                  <div className="admin-row-actions">
+                    <button className="btn primary" onClick={() => saveEdit(c.id)}>Guardar</button>
+                    <button className="btn outline" onClick={() => setEditingId(null)}>Cancelar</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <h3>{c.icon} {c.name}</h3>
+                    <p>{c.slug}{c.description ? ` · ${c.description}` : ''}</p>
+                  </div>
+                  <span className={`status-pill ${c.is_active ? 'tm-status-active' : 'tm-status-cancelled'}`}>
+                    ● {c.is_active ? 'Activa' : 'Inactiva'}
+                  </span>
+                  <div className="admin-row-actions">
+                    <button className="btn outline" onClick={() => startEdit(c)}>Editar</button>
+                    <button className="btn outline" onClick={() => toggle(c)}>{c.is_active ? 'Desactivar' : 'Activar'}</button>
+                  </div>
+                </>
+              )}
             </article>
           ))}
         </div>

@@ -33,6 +33,16 @@ export function AdminUsers() {
     }
   }
 
+  async function toggleActive(u) {
+    setError('');
+    try {
+      await apiFetch(`/api/admin/users/${u.id}/active`, { method: 'PATCH', body: JSON.stringify({ is_active: !u.is_active }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   return (
     <div>
       <div className="form-card admin-promote-card">
@@ -61,6 +71,12 @@ export function AdminUsers() {
                 <p>{u.phone || 'Sin teléfono'}</p>
               </div>
               <span className={`role-badge ${u.role}`}>{u.role}</span>
+              <span className={`status-pill ${u.is_active ? 'tm-status-active' : 'tm-status-cancelled'}`}>
+                ● {u.is_active ? 'Activa' : 'Desactivada'}
+              </span>
+              <div className="admin-row-actions">
+                <button className="btn outline" onClick={() => toggleActive(u)}>{u.is_active ? 'Desactivar cuenta' : 'Activar cuenta'}</button>
+              </div>
             </article>
           ))}
         </div>

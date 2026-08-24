@@ -361,6 +361,21 @@ def admin_list_users():
         return api_error(e)
 
 
+@main.patch('/api/admin/users/<uuid:user_id>/active')
+def admin_set_user_active(user_id):
+    token, _ = require_admin()
+    d = request.get_json(silent=True) or {}
+    if 'is_active' not in d:
+        return jsonify({'error': 'is_active es obligatorio'}), 400
+    try:
+        rows = rest('profiles', {'id': f'eq.{user_id}'}, method='PATCH', data={'is_active': bool(d.get('is_active'))}, token=token, prefer='return=representation')
+        if not rows:
+            return jsonify({'error': 'Usuario no encontrado'}), 404
+        return jsonify(rows[0])
+    except SupabaseError as e:
+        return api_error(e)
+
+
 @main.post('/api/admin/users/promote')
 def admin_promote_user():
     token, _ = require_admin()
