@@ -34,7 +34,16 @@ export function Account() {
     setMsg({ text: '', ok: false });
 
     const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
-    if (error) return setMsg({ text: error.message, ok: false });
+    if (error) {
+      let message = error.message;
+      const lowerMsg = message.toLowerCase();
+      if (lowerMsg.includes('already registered') || lowerMsg.includes('user already exists') || lowerMsg.includes('duplicate')) {
+        message = `El correo "${email}" ya está registrado. Por favor, inicia sesión con este correo o usa otro.`;
+      } else if (lowerMsg.includes('rate limit') || lowerMsg.includes('too many')) {
+        message = 'Demasiados intentos de registro con este correo. Espera unos minutos e intenta de nuevo.';
+      }
+      return setMsg({ text: message, ok: false });
+    }
 
     if (signupType === 'cliente') {
       setMsg({ text: 'Cuenta creada. Revisa tu correo si la confirmación está activada.', ok: true });
