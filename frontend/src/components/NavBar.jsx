@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Logo } from './Logo';
 
 export function NavBar() {
-  const { session, signOut, isAdmin } = useAuth();
+  const { session, signOut, isAdmin, role } = useAuth();
   const navigate = useNavigate();
 
   async function handleLogout() {
@@ -19,6 +19,7 @@ export function NavBar() {
         <Link to="/buscar">Categorías</Link>
         <Link to="/buscar">Profesionales</Link>
         <Link to="/mis-solicitudes">Solicitudes</Link>
+        {role === 'professional' && <Link to="/mi-perfil-profesional">Mi perfil profesional</Link>}
         <a href="/#como-funciona">Cómo funciona</a>
         {isAdmin && <Link to="/admin">Admin</Link>}
       </nav>

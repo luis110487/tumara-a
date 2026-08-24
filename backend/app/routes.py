@@ -142,6 +142,61 @@ def api_professional_create():
         return api_error(e)
 
 
+@main.get('/api/professionals/mine')
+def api_professional_mine():
+    token, user = require_user()
+    try:
+        rows = rest('professionals', {'select': PROFESSIONAL_FIELDS + ',status,created_at', 'user_id': f'eq.{user["id"]}', 'limit': '1'}, token=token)
+    except SupabaseError as e:
+        return api_error(e)
+    if not rows:
+        return jsonify({'error': 'No tienes un perfil profesional creado'}), 404
+    rows = with_categories(rows)
+    return jsonify(rows[0])
+
+
+@main.patch('/api/professionals/mine')
+def api_professional_mine_update():
+    token, user = require_user()
+    d = request.get_json(silent=True) or {}
+    data = {}
+    if 'display_name' in d:
+        data['display_name'] = str(d.get('display_name', '')).strip()[:150]
+    if 'category_id' in d:
+        try:
+            data['category_id'] = int(d.get('category_id'))
+        except (TypeError, ValueError):
+            return jsonify({'error': 'category_id debe ser numérico'}), 400
+    if 'city' in d:
+        city = str(d.get('city', '')).strip()[:100]
+        if not city:
+            return jsonify({'error': 'La ciudad no puede estar vacía'}), 400
+        data['city'] = city
+    if 'neighborhood' in d:
+        data['neighborhood'] = str(d.get('neighborhood', '')).strip()[:100]
+    if 'whatsapp' in d:
+        data['whatsapp'] = str(d.get('whatsapp', '')).strip()[:20] or None
+    if 'experience_years' in d:
+        try:
+            data['experience_years'] = max(0, min(int(d.get('experience_years', 0)), 80))
+        except (TypeError, ValueError):
+            return jsonify({'error': 'experience_years debe ser numérico'}), 400
+    if 'description' in d:
+        description = str(d.get('description', '')).strip()[:3000]
+        if not description:
+            return jsonify({'error': 'La descripción no puede estar vacía'}), 400
+        data['description'] = description
+    if not data:
+        return jsonify({'error': 'Nada para actualizar'}), 400
+    try:
+        rows = rest('professionals', {'user_id': f'eq.{user["id"]}'}, method='PATCH', data=data, token=token, prefer='return=representation')
+        if not rows:
+            return jsonify({'error': 'No tienes un perfil profesional creado'}), 404
+        return jsonify(rows[0])
+    except SupabaseError as e:
+        return api_error(e)
+
+
 @main.get('/api/requests/mine')
 def api_requests_mine():
     token, user = require_user()
