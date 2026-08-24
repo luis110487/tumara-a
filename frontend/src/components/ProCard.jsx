@@ -18,6 +18,7 @@ export function ProCard({ p }) {
         </div>
       </div>
       <Link className="tm-pro-link" to={`/profesional/${p.id}`}>→</Link>
+      <Link className="tm-pro-hover" to={`/profesional/${p.id}`}>Ver perfil</Link>
     </article>
   );
 }
