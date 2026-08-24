@@ -7,9 +7,16 @@ import { CitySelect } from '../components/CitySelect';
 import { BannerAd } from '../components/BannerAd';
 import { useAuth } from '../context/AuthContext';
 
+const DEFAULT_TEXTS = {
+  home_categories_title: 'Categorías populares',
+  home_professionals_title: 'Profesionales destacados',
+  home_how_it_works_title: 'Así de fácil',
+};
+
 export function Home() {
   const [categories, setCategories] = useState([]);
   const [professionals, setProfessionals] = useState([]);
+  const [texts, setTexts] = useState(DEFAULT_TEXTS);
   const [q, setQ] = useState('');
   const [city, setCity] = useState('');
   const [category, setCategory] = useState('');
@@ -19,6 +26,7 @@ export function Home() {
   useEffect(() => {
     apiFetchPublic('/api/categories').then(setCategories).catch(() => setCategories([]));
     apiFetchPublic('/api/professionals?limit=8').then(setProfessionals).catch(() => setProfessionals([]));
+    apiFetchPublic('/api/site-texts').then(t => setTexts({ ...DEFAULT_TEXTS, ...t })).catch(() => {});
   }, []);
 
   function handleSearch(e) {
@@ -62,7 +70,7 @@ export function Home() {
       </section>
 
       <section className="tm-section" id="categorias">
-        <div className="tm-section-head"><h2>Categorías populares</h2><a href="/buscar">Ver todas las categorías →</a></div>
+        <div className="tm-section-head"><h2>{texts.home_categories_title}</h2><a href="/buscar">Ver todas las categorías →</a></div>
         <div className="tm-category-grid">
           {categories.slice(0, 7).map((c, i) => <CategoryCard key={c.id} category={c} index={i} />)}
           <a className="tm-category" href="/buscar"><div className="tm-cat-icon tm-tile-navy">•••</div><strong>Más categorías</strong></a>
@@ -70,7 +78,7 @@ export function Home() {
       </section>
 
       <section className="tm-section tm-featured" id="profesionales">
-        <div className="tm-section-head"><h2>Profesionales destacados</h2><a href="/buscar">Ver todos los profesionales →</a></div>
+        <div className="tm-section-head"><h2>{texts.home_professionals_title}</h2><a href="/buscar">Ver todos los profesionales →</a></div>
         <div className="tm-pro-grid">
           {professionals.length ? professionals.map(p => <ProCard key={p.id} p={p} />) : <div className="empty">Conecta Supabase para mostrar profesionales.</div>}
         </div>
@@ -79,7 +87,7 @@ export function Home() {
       <BannerAd />
 
       <section className="tm-section" id="como-funciona">
-        <div className="tm-section-head"><h2>Así de fácil</h2></div>
+        <div className="tm-section-head"><h2>{texts.home_how_it_works_title}</h2></div>
         <div className="steps">
           <article><b>01</b><h3>Busca</h3><p>Encuentra el servicio que necesitas y filtra por ubicación.</p></article>
           <article><b>02</b><h3>Compara</h3><p>Revisa experiencia, valoraciones y perfiles verificados.</p></article>

@@ -102,6 +102,41 @@ def api_categories():
     return jsonify(categories)
 
 
+@main.get('/api/site-texts')
+def api_site_texts():
+    try:
+        rows = rest('site_texts', {'select': 'key,value'})
+    except SupabaseError:
+        rows = []
+    return jsonify({r['key']: r['value'] for r in rows})
+
+
+@main.get('/api/admin/site-texts')
+def admin_list_site_texts():
+    token, _ = require_admin()
+    try:
+        rows = rest('site_texts', {'select': 'key,value,updated_at', 'order': 'key.asc'}, token=token)
+    except SupabaseError as e:
+        return api_error(e)
+    return jsonify(rows)
+
+
+@main.patch('/api/admin/site-texts/<key>')
+def admin_update_site_text(key):
+    token, _ = require_admin()
+    d = request.get_json(silent=True) or {}
+    value = str(d.get('value', '')).strip()[:300]
+    if not value:
+        return jsonify({'error': 'El texto no puede estar vacío'}), 400
+    try:
+        rows = rest('site_texts', {'key': f'eq.{key}'}, method='PATCH', data={'value': value}, token=token, prefer='return=representation')
+        if not rows:
+            return jsonify({'error': 'Texto no encontrado'}), 404
+        return jsonify(rows[0])
+    except SupabaseError as e:
+        return api_error(e)
+
+
 @main.get('/api/professionals')
 def api_professionals_list():
     q = request.args.get('q', '').strip()[:100]

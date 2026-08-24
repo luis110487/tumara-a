@@ -11,6 +11,7 @@ export function AdminLayout() {
         <NavLink to="/admin/solicitudes" className={({ isActive }) => (isActive ? 'active' : '')}>Solicitudes</NavLink>
         <NavLink to="/admin/usuarios" className={({ isActive }) => (isActive ? 'active' : '')}>Usuarios</NavLink>
         <NavLink to="/admin/banners" className={({ isActive }) => (isActive ? 'active' : '')}>Banners</NavLink>
+        <NavLink to="/admin/textos" className={({ isActive }) => (isActive ? 'active' : '')}>Textos</NavLink>
       </nav>
       <Outlet />
     </section>
