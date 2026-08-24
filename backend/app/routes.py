@@ -7,7 +7,7 @@ from .supabase_client import rest, rpc, auth_user, auth_signup, auth_admin_set_p
 
 main = Blueprint('main', __name__)
 
-PROFESSIONAL_FIELDS = 'id,display_name,city,neighborhood,description,experience_years,rating,total_reviews,verified,category_id,whatsapp,photo_url'
+PROFESSIONAL_FIELDS = 'id,display_name,city,neighborhood,description,experience_years,rating,total_reviews,verified,category_id,whatsapp,photo_url,evidence_url_1,evidence_url_2'
 REQUEST_FIELDS = 'id,professional_id,customer_id,service_title,description,city,address,preferred_date,status,created_at,updated_at'
 VALID_STATUSES = {'requested', 'in_conversation', 'quoted', 'accepted', 'in_progress', 'completed', 'cancelled'}
 PROFESSIONAL_STATUSES = {'pending', 'approved', 'rejected', 'suspended'}
@@ -160,6 +160,8 @@ def api_professional_create():
     description = str(d.get('description', '')).strip()[:3000]
     if not city or not description:
         return jsonify({'error': 'Faltan campos obligatorios'}), 400
+    evidence_url_1 = str(d.get('evidence_url_1', '')).strip()[:500] or None
+    evidence_url_2 = str(d.get('evidence_url_2', '')).strip()[:500] or None
     try:
         name = str(d.get('display_name') or user.get('user_metadata', {}).get('full_name') or user.get('email', 'Usuario')).strip()[:150]
         result = rpc('create_professional_profile', {
@@ -171,6 +173,14 @@ def api_professional_create():
             'p_experience_years': experience,
             'p_whatsapp': str(d.get('whatsapp', '')).strip()[:20] or None,
         }, token)
+        if evidence_url_1 or evidence_url_2:
+            evidence_data = {k: v for k, v in {'evidence_url_1': evidence_url_1, 'evidence_url_2': evidence_url_2}.items() if v}
+            try:
+                rows = rest('professionals', {'user_id': f'eq.{user["id"]}'}, method='PATCH', data=evidence_data, token=token, prefer='return=representation')
+                if rows:
+                    result = rows[0]
+            except SupabaseError:
+                pass
         return jsonify(result), 201
     except SupabaseError as e:
         return api_error(e)
@@ -225,6 +235,10 @@ def api_professional_mine_update():
         if not photo_url:
             return jsonify({'error': 'La URL de la foto no puede estar vacía'}), 400
         data['photo_url'] = photo_url
+    if 'evidence_url_1' in d:
+        data['evidence_url_1'] = str(d.get('evidence_url_1', '')).strip()[:500] or None
+    if 'evidence_url_2' in d:
+        data['evidence_url_2'] = str(d.get('evidence_url_2', '')).strip()[:500] or None
     if not data:
         return jsonify({'error': 'Nada para actualizar'}), 400
     try:

@@ -47,6 +47,16 @@ export function ProfessionalProfile() {
         </div>
       </div>
 
+      {(p.evidence_url_1 || p.evidence_url_2) && (
+        <div className="profile-body" style={{ marginTop: '20px' }}>
+          <h2>Evidencias de trabajo</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
+            {p.evidence_url_1 && <img src={p.evidence_url_1} alt="Evidencia de trabajo 1" style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '10px' }} />}
+            {p.evidence_url_2 && <img src={p.evidence_url_2} alt="Evidencia de trabajo 2" style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '10px' }} />}
+          </div>
+        </div>
+      )}
+
       {reviews.length > 0 && (
         <div className="profile-body" style={{ marginTop: '20px' }}>
           <h2>Reseñas de clientes</h2>

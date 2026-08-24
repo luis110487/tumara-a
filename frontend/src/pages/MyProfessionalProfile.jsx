@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiFetch, apiFetchPublic, AuthRequiredError } from '../lib/apiClient';
 import { supabase } from '../lib/supabaseClient';
+import { uploadEvidencePhoto } from '../lib/uploadEvidence';
 import { CityPicker } from '../components/CityPicker';
 import { StatusBadge, PROFESSIONAL_STATUS_LABELS, PROFESSIONAL_STATUS_CLASSES } from '../components/StatusBadge';
 
@@ -27,6 +28,8 @@ export function MyProfessionalProfile() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [photoMsg, setPhotoMsg] = useState({ text: '', ok: false });
+  const [evidenceUploading, setEvidenceUploading] = useState(null);
+  const [evidenceMsg, setEvidenceMsg] = useState({ text: '', ok: false });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -96,6 +99,27 @@ export function MyProfessionalProfile() {
       setPhotoMsg({ text: `Error al subir la foto: ${err.message}`, ok: false });
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleEvidenceUpload(slot, e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setEvidenceUploading(slot);
+    setEvidenceMsg({ text: '', ok: false });
+    try {
+      const url = await uploadEvidencePhoto(file);
+      const field = slot === 1 ? 'evidence_url_1' : 'evidence_url_2';
+      const updated = await apiFetch('/api/professionals/mine', {
+        method: 'PATCH',
+        body: JSON.stringify({ [field]: url }),
+      });
+      setProfile(updated);
+      setEvidenceMsg({ text: 'Evidencia actualizada.', ok: true });
+    } catch (err) {
+      setEvidenceMsg({ text: `Error al subir la evidencia: ${err.message}`, ok: false });
+    } finally {
+      setEvidenceUploading(null);
     }
   }
 
@@ -180,7 +204,27 @@ export function MyProfessionalProfile() {
           <p><b>WhatsApp:</b> {profile.whatsapp || 'No especificado'}</p>
           <p><b>Años de experiencia:</b> {profile.experience_years}</p>
           <p><b>Descripción:</b> {profile.description}</p>
-          <button className="btn primary" type="button" onClick={() => setEditing(true)} style={{ marginTop: '14px' }}>Editar perfil</button>
+
+          <div style={{ marginTop: '16px' }}>
+            <b style={{ fontSize: '13px' }}>Evidencias de trabajo</b>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '10px' }}>
+              {[1, 2].map(slot => {
+                const url = slot === 1 ? profile.evidence_url_1 : profile.evidence_url_2;
+                return (
+                  <div key={slot}>
+                    {url && <img src={url} alt={`Evidencia ${slot}`} style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '10px', marginBottom: '8px' }} />}
+                    <label className="link-btn" style={{ cursor: evidenceUploading === slot ? 'default' : 'pointer' }}>
+                      {evidenceUploading === slot ? 'Subiendo...' : url ? 'Cambiar evidencia' : 'Agregar evidencia'}
+                      <input type="file" accept="image/*" onChange={e => handleEvidenceUpload(slot, e)} disabled={evidenceUploading === slot} style={{ display: 'none' }} />
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+            {evidenceMsg.text && <div className={`msg ${evidenceMsg.ok ? 'ok' : 'error'}`} style={{ marginTop: '10px' }}>{evidenceMsg.text}</div>}
+          </div>
+
+          <button className="btn primary" type="button" onClick={() => setEditing(true)} style={{ marginTop: '18px' }}>Editar perfil</button>
         </div>
       ) : (
         <div className="form-card" style={{ marginBottom: '30px', maxWidth: '600px' }}>

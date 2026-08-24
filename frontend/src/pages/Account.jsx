@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { apiFetch, apiFetchPublic } from '../lib/apiClient';
+import { uploadEvidencePhoto } from '../lib/uploadEvidence';
 import { CityPicker } from '../components/CityPicker';
 
 export function Account() {
@@ -11,6 +12,7 @@ export function Account() {
   const [msg, setMsg] = useState({ text: '', ok: false });
   const [showRecover, setShowRecover] = useState(false);
   const [done, setDone] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -60,6 +62,15 @@ export function Account() {
     }
 
     try {
+      setUploading(true);
+      const file1 = f.evidence1.files?.[0];
+      const file2 = f.evidence2.files?.[0];
+      const [evidence_url_1, evidence_url_2] = await Promise.all([
+        file1 ? uploadEvidencePhoto(file1) : null,
+        file2 ? uploadEvidencePhoto(file2) : null,
+      ]);
+      setUploading(false);
+
       await apiFetch('/api/professionals', {
         method: 'POST',
         body: JSON.stringify({
@@ -70,6 +81,8 @@ export function Account() {
           experience_years: f.experience.value,
           description: f.description.value.trim(),
           whatsapp: f.whatsapp.value.trim(),
+          evidence_url_1,
+          evidence_url_2,
         }),
       });
       setDone({
@@ -77,6 +90,7 @@ export function Account() {
         text: 'Tu cuenta y perfil profesional fueron creados. Tu perfil está en espera de aprobación por un administrador antes de aparecer públicamente.',
       });
     } catch (err) {
+      setUploading(false);
       setMsg({ text: `Tu cuenta quedó creada, pero no pudimos enviar tu perfil profesional (${err.message}).`, ok: false });
     }
   }
@@ -157,9 +171,12 @@ export function Account() {
                       <label>WhatsApp (opcional)<input name="whatsapp" placeholder="573001234567" maxLength={20} /></label>
                       <label>Años de experiencia<input name="experience" type="number" min="0" max="80" defaultValue="0" /></label>
                       <label>Descripción<textarea name="description" rows={5} maxLength={3000} required /></label>
+                      <p className="signup-hint">Evidencias de trabajo (opcional): sube hasta 2 fotos de trabajos realizados.</p>
+                      <label>Foto de evidencia 1<input type="file" name="evidence1" accept="image/*" /></label>
+                      <label>Foto de evidencia 2<input type="file" name="evidence2" accept="image/*" /></label>
                     </>
                   )}
-                  <button className="btn primary" type="submit">Crear cuenta</button>
+                  <button className="btn primary" type="submit" disabled={uploading}>{uploading ? 'Subiendo fotos...' : 'Crear cuenta'}</button>
                 </form>
               </>
             )}
