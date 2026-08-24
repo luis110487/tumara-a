@@ -7,6 +7,7 @@ import { SearchResults } from './pages/SearchResults';
 import { ProfessionalProfile } from './pages/ProfessionalProfile';
 import { RegisterProfessional } from './pages/RegisterProfessional';
 import { MyProfessionalProfile } from './pages/MyProfessionalProfile';
+import { MyProfile } from './pages/MyProfile';
 import { Account } from './pages/Account';
 import { ResetPassword } from './pages/ResetPassword';
 import { RequestService } from './pages/RequestService';
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/profesional/:id" element={<ProfessionalProfile />} />
         <Route path="/registrar" element={<ProtectedRoute><RegisterProfessional /></ProtectedRoute>} />
         <Route path="/mi-perfil-profesional" element={<ProtectedRoute><MyProfessionalProfile /></ProtectedRoute>} />
+        <Route path="/mi-perfil" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
         <Route path="/cuenta" element={<Account />} />
         <Route path="/restablecer-contrasena" element={<ResetPassword />} />
         <Route path="/solicitar/:id" element={<ProtectedRoute><RequestService /></ProtectedRoute>} />

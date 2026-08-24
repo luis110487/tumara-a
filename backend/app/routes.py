@@ -68,6 +68,29 @@ def api_me():
     return jsonify(profs[0])
 
 
+@main.patch('/api/me')
+def api_me_update():
+    token, user = require_user()
+    d = request.get_json(silent=True) or {}
+    data = {}
+    if 'full_name' in d:
+        full_name = str(d.get('full_name', '')).strip()[:150]
+        if not full_name:
+            return jsonify({'error': 'El nombre no puede estar vacío'}), 400
+        data['full_name'] = full_name
+    if 'phone' in d:
+        data['phone'] = str(d.get('phone', '')).strip()[:20] or None
+    if not data:
+        return jsonify({'error': 'Nada para actualizar'}), 400
+    try:
+        rows = rest('profiles', {'id': f'eq.{user["id"]}'}, method='PATCH', data=data, token=token, prefer='return=representation')
+        if not rows:
+            return jsonify({'error': 'Perfil no encontrado'}), 404
+        return jsonify(rows[0])
+    except SupabaseError as e:
+        return api_error(e)
+
+
 @main.get('/api/categories')
 def api_categories():
     try:

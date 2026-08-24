@@ -19,6 +19,7 @@ export function NavBar() {
         <Link to="/buscar">Categorías</Link>
         <Link to="/buscar">Profesionales</Link>
         <Link to="/mis-solicitudes">Solicitudes</Link>
+        {session && <Link to="/mi-perfil">Mi perfil</Link>}
         {role === 'professional' && <Link to="/mi-perfil-profesional">Mi perfil profesional</Link>}
         <a href="/#como-funciona">Cómo funciona</a>
         {isAdmin && <Link to="/admin">Admin</Link>}
