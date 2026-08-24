@@ -8,6 +8,8 @@ export function AdminUsers() {
   const [error, setError] = useState('');
   const [promoteMsg, setPromoteMsg] = useState({ text: '', ok: false });
   const [createMsg, setCreateMsg] = useState({ text: '', ok: false });
+  const [editingId, setEditingId] = useState(null);
+  const [editMsg, setEditMsg] = useState({ text: '', ok: false });
 
   function load() {
     setLoading(true);
@@ -62,6 +64,28 @@ export function AdminUsers() {
     }
   }
 
+  async function handleEditUser(e) {
+    e.preventDefault();
+    const f = e.target;
+    const user = users.find(u => u.id === editingId);
+    setEditMsg({ text: '', ok: false });
+    try {
+      await apiFetch(`/api/admin/users/${editingId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          full_name: f.full_name.value.trim(),
+          phone: f.phone.value.trim(),
+          role: f.role.value,
+        }),
+      });
+      setEditMsg({ text: 'Usuario actualizado correctamente', ok: true });
+      setEditingId(null);
+      load();
+    } catch (err) {
+      setEditMsg({ text: err.message, ok: false });
+    }
+  }
+
   return (
     <div>
       <div className="form-card admin-promote-card">
@@ -83,6 +107,35 @@ export function AdminUsers() {
         </form>
         {promoteMsg.text && <div className={`msg ${promoteMsg.ok ? 'ok' : 'error'}`}>{promoteMsg.text}</div>}
       </div>
+
+      {editingId && (
+        <div className="form-card admin-promote-card">
+          <h2 className="requests-subhead">Editar usuario</h2>
+          <form className="admin-edit-form" onSubmit={handleEditUser}>
+            {(() => {
+              const user = users.find(u => u.id === editingId);
+              return (
+                <>
+                  <label>Nombre completo<input name="full_name" defaultValue={user?.full_name} required maxLength={150} /></label>
+                  <label>Teléfono<input name="phone" defaultValue={user?.phone || ''} maxLength={20} placeholder="opcional" /></label>
+                  <label>Rol
+                    <select name="role" defaultValue={user?.role}>
+                      <option value="customer">Cliente</option>
+                      <option value="professional">Profesional</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                  </label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button className="btn primary" type="submit">Guardar cambios</button>
+                    <button className="btn outline" type="button" onClick={() => setEditingId(null)}>Cancelar</button>
+                  </div>
+                </>
+              );
+            })()}
+          </form>
+          {editMsg.text && <div className={`msg ${editMsg.ok ? 'ok' : 'error'}`}>{editMsg.text}</div>}
+        </div>
+      )}
 
       <div className="admin-toolbar">
         <select value={role} onChange={e => setRole(e.target.value)}>
@@ -106,7 +159,8 @@ export function AdminUsers() {
                 ● {u.is_active ? 'Activa' : 'Desactivada'}
               </span>
               <div className="admin-row-actions">
-                <button className="btn outline" onClick={() => toggleActive(u)}>{u.is_active ? 'Desactivar cuenta' : 'Activar cuenta'}</button>
+                <button className="btn outline" onClick={() => setEditingId(u.id)}>Editar</button>
+                <button className="btn outline" onClick={() => toggleActive(u)}>{u.is_active ? 'Desactivar' : 'Activar'}</button>
               </div>
             </article>
           ))}

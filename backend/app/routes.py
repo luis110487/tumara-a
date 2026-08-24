@@ -376,6 +376,33 @@ def admin_set_user_active(user_id):
         return api_error(e)
 
 
+@main.patch('/api/admin/users/<uuid:user_id>')
+def admin_update_user(user_id):
+    token, _ = require_admin()
+    d = request.get_json(silent=True) or {}
+    data = {}
+    if 'full_name' in d:
+        data['full_name'] = str(d.get('full_name', '')).strip()[:150]
+    if 'phone' in d:
+        data['phone'] = str(d.get('phone', '')).strip()[:20] or None
+    if 'role' in d:
+        role = str(d.get('role', '')).strip()
+        if role not in {'customer', 'professional', 'admin'}:
+            return jsonify({'error': 'Rol inválido'}), 400
+        data['role'] = role
+    if 'is_active' in d:
+        data['is_active'] = bool(d.get('is_active'))
+    if not data:
+        return jsonify({'error': 'Nada para actualizar'}), 400
+    try:
+        rows = rest('profiles', {'id': f'eq.{user_id}'}, method='PATCH', data=data, token=token, prefer='return=representation')
+        if not rows:
+            return jsonify({'error': 'Usuario no encontrado'}), 404
+        return jsonify(rows[0])
+    except SupabaseError as e:
+        return api_error(e)
+
+
 @main.post('/api/admin/users/create-admin')
 def admin_create_admin_user():
     token, _ = require_admin()
