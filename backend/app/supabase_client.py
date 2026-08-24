@@ -74,3 +74,20 @@ def auth_admin_set_password(user_id, new_password):
     if r.status_code >= 400:
         raise SupabaseError(f'Supabase Admin {r.status_code}: {r.text[:800]}')
     return r.json() if r.text else {}
+
+def auth_admin_list_emails():
+    url, h = admin_headers()
+    emails = {}
+    page = 1
+    while True:
+        r = requests.get(f'{url}/auth/v1/admin/users', headers=h, params={'page': page, 'per_page': 1000}, timeout=15)
+        if r.status_code >= 400:
+            raise SupabaseError(f'Supabase Admin {r.status_code}: {r.text[:800]}')
+        body = r.json() if r.text else {}
+        users = body.get('users', [])
+        for u in users:
+            emails[u['id']] = u.get('email')
+        if len(users) < 1000:
+            break
+        page += 1
+    return emails

@@ -176,6 +176,7 @@ export function AdminUsers() {
             <article className="admin-row" key={u.id}>
               <div>
                 <h3>{u.full_name}</h3>
+                <p>{u.email || 'Sin correo'}</p>
                 <p>{u.phone || 'Sin teléfono'}</p>
               </div>
               <span className={`role-badge ${u.role}`}>{u.role}</span>

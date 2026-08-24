@@ -3,7 +3,7 @@ import secrets
 import string
 
 from flask import Blueprint, request, jsonify, abort
-from .supabase_client import rest, rpc, auth_user, auth_signup, auth_admin_set_password, SupabaseError
+from .supabase_client import rest, rpc, auth_user, auth_signup, auth_admin_set_password, auth_admin_list_emails, SupabaseError
 
 main = Blueprint('main', __name__)
 
@@ -487,9 +487,17 @@ def admin_list_users():
     if q:
         params['full_name'] = f'ilike.*{q}*'
     try:
-        return jsonify(rest('profiles', params, token=token))
+        users = rest('profiles', params, token=token)
     except SupabaseError as e:
         return api_error(e)
+    try:
+        emails = auth_admin_list_emails()
+        for u in users:
+            u['email'] = emails.get(u['id'])
+    except SupabaseError:
+        for u in users:
+            u['email'] = None
+    return jsonify(users)
 
 
 @main.patch('/api/admin/users/<uuid:user_id>/active')
