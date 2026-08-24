@@ -140,6 +140,7 @@ export function AdminUsers() {
               const user = users.find(u => u.id === editingId);
               return (
                 <>
+                  <label>Correo<input value={user?.email || 'Sin correo'} disabled /></label>
                   <label>Nombre completo<input name="full_name" defaultValue={user?.full_name} required maxLength={150} /></label>
                   <label>Teléfono<input name="phone" defaultValue={user?.phone || ''} maxLength={20} placeholder="opcional" /></label>
                   <label>Rol
