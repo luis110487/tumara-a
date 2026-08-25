@@ -49,15 +49,16 @@ export function Account() {
     }
 
     if (signupType === 'cliente') {
-      setMsg({ text: 'Cuenta creada. Revisa tu correo si la confirmación está activada.', ok: true });
+      if (!data.session) {
+        setMsg({ text: 'Cuenta creada. Inicia sesión para continuar.', ok: true });
+        return;
+      }
+      navigate('/');
       return;
     }
 
     if (!data.session) {
-      setDone({
-        title: 'Cuenta creada',
-        text: 'Confirma tu correo e inicia sesión para completar tu registro profesional.',
-      });
+      setMsg({ text: 'Cuenta creada. Inicia sesión para completar tu registro profesional.', ok: true });
       return;
     }
 
