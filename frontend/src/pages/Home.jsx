@@ -11,6 +11,7 @@ const DEFAULT_TEXTS = {
   home_categories_title: 'Categorías populares',
   home_professionals_title: 'Profesionales destacados',
   home_how_it_works_title: 'Así de fácil',
+  hero_image_url: '/hero-professionals.webp',
 };
 
 export function Home() {
@@ -49,7 +50,7 @@ export function Home() {
         <div className="tm-hero-art">
           <div className="tm-circle tm-yellow" />
           <div className="tm-circle tm-blue" />
-          <img className="tm-hero-photo" src="/hero-professionals.webp" alt="Profesionales de limpieza y mantenimiento de TuMaraña.com" />
+          <img className="tm-hero-photo" src={texts.hero_image_url} alt="Profesionales de limpieza y mantenimiento de TuMaraña.com" />
         </div>
         <form className="tm-search" onSubmit={handleSearch}>
           <div className="tm-field"><span>⌕</span><div><small>¿QUÉ SERVICIO NECESITAS?</small>

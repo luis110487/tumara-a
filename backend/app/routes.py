@@ -125,7 +125,7 @@ def admin_list_site_texts():
 def admin_update_site_text(key):
     token, _ = require_admin()
     d = request.get_json(silent=True) or {}
-    value = str(d.get('value', '')).strip()[:300]
+    value = str(d.get('value', '')).strip()[:1000]
     if not value:
         return jsonify({'error': 'El texto no puede estar vacío'}), 400
     try:
