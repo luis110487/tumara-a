@@ -7,6 +7,7 @@ const LABELS = {
   home_professionals_title: 'Título sección "Profesionales destacados"',
   home_how_it_works_title: 'Título sección "Así de fácil"',
   hero_image_url: 'Imagen principal del inicio',
+  hero_image_link: 'Link de la imagen principal (opcional)',
 };
 
 async function uploadSiteAsset(file) {
@@ -50,6 +51,22 @@ export function AdminTexts() {
     }
   }
 
+  async function handleSaveLink(e, key) {
+    e.preventDefault();
+    const value = e.target.value.value.trim();
+    setSavingKey(key);
+    setMsg({ text: '', ok: false });
+    try {
+      await apiFetch(`/api/admin/site-texts/${key}`, { method: 'PATCH', body: JSON.stringify({ value }) });
+      setMsg({ text: 'Link actualizado correctamente.', ok: true });
+      load();
+    } catch (err) {
+      setMsg({ text: err.message, ok: false });
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
   async function handleImageUpload(e, key) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -77,9 +94,9 @@ export function AdminTexts() {
       </p>
       {msg.text && <div className={`msg ${msg.ok ? 'ok' : 'error'}`} style={{ marginBottom: '20px' }}>{msg.text}</div>}
       <div className="admin-list">
-        {texts.map(t => t.key === 'hero_image_url' ? (
-          <div className="admin-row" key={t.key}>
-            <div style={{ flex: 1 }}>
+        {texts.filter(t => t.key !== 'hero_image_link').map(t => t.key === 'hero_image_url' ? (
+          <div className="admin-row" key={t.key} style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+            <div style={{ width: '100%' }}>
               <p style={{ fontWeight: 800, fontSize: '13px', marginBottom: '10px' }}>{LABELS[t.key] || t.key}</p>
               <img src={t.value} alt="Imagen principal" style={{ maxWidth: '260px', maxHeight: '160px', objectFit: 'cover', borderRadius: '10px', marginBottom: '10px', display: 'block' }} />
               <label className="link-btn" style={{ cursor: savingKey === t.key ? 'default' : 'pointer' }}>
@@ -87,6 +104,20 @@ export function AdminTexts() {
                 <input type="file" accept="image/*" onChange={e => handleImageUpload(e, t.key)} disabled={savingKey === t.key} style={{ display: 'none' }} />
               </label>
             </div>
+            {(() => {
+              const linkText = texts.find(x => x.key === 'hero_image_link');
+              return (
+                <form onSubmit={e => handleSaveLink(e, 'hero_image_link')} style={{ width: '100%', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--tm-line)' }}>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', fontWeight: 800 }}>
+                    {LABELS.hero_image_link}
+                    <input name="value" type="url" defaultValue={linkText?.value || ''} maxLength={500} placeholder="https://... (déjalo vacío para que no sea clickeable)" />
+                  </label>
+                  <button className="btn primary" type="submit" disabled={savingKey === 'hero_image_link'} style={{ marginTop: '10px' }}>
+                    {savingKey === 'hero_image_link' ? 'Guardando...' : 'Guardar link'}
+                  </button>
+                </form>
+              );
+            })()}
           </div>
         ) : (
           <form className="admin-row" onSubmit={e => handleSave(e, t.key)} key={t.key}>
