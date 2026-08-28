@@ -53,15 +53,8 @@ export function Home() {
 
   return (
     <>
-      <section className="tm-hero">
-        <div className="tm-hero-copy">
-          <span className="tm-kicker">TU MARAÑA.COM</span>
-          <h1>Conectamos<br />necesidades<br /><em>con habilidades</em></h1>
-          <p>Encuentra profesionales confiables para realizar cualquier servicio que necesites en tu hogar o negocio.</p>
-        </div>
-        <div className="tm-hero-art">
-          <div className="tm-circle tm-yellow" />
-          <div className="tm-circle tm-blue" />
+      <section className="tm-hero-full">
+        <div className="tm-hero-slider-wrap">
           <HeroSlider slides={heroSlides} />
         </div>
         <form className="tm-search" onSubmit={handleSearch}>

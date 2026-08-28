@@ -30,7 +30,7 @@ export function HeroSlider({ slides }) {
   }
 
   const image = (
-    <img className="tm-hero-photo" src={current.url} alt="Profesionales de limpieza y mantenimiento de TuMaraña.com" />
+    <img className="tm-hero-slide-img" src={current.url} alt="Profesionales de limpieza y mantenimiento de TuMaraña.com" />
   );
 
   return (
