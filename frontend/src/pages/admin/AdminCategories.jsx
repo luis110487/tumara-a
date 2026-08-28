@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../../lib/apiClient';
 import { IconPicker } from '../../components/IconPicker';
-import { CategoryIcon } from '../../components/CategoryIcon';
 
 const EMPTY_FORM = { name: '', slug: '', icon: '', description: '' };
 
@@ -72,9 +71,7 @@ export function AdminCategories() {
         <input placeholder="Descripción (opcional)" maxLength={500} value={createForm.description} onChange={e => setCreateForm({ ...createForm, description: e.target.value })} />
         <button className="btn primary" type="submit">Crear</button>
         <div className="icon-picker-field">
-          <span className="icon-picker-current">
-            {createForm.icon ? <CategoryIcon name={createForm.icon} size={18} /> : null} {createForm.icon ? '' : 'Elige un icono'}
-          </span>
+          <span className="icon-picker-current">{createForm.icon || 'Elige un icono'}</span>
           <IconPicker value={createForm.icon} onChange={icon => setCreateForm({ ...createForm, icon })} />
         </div>
       </form>
