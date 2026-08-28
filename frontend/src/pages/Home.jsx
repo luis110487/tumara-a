@@ -5,6 +5,7 @@ import { CategoryCard } from '../components/CategoryCard';
 import { ProCard } from '../components/ProCard';
 import { CitySelect } from '../components/CitySelect';
 import { BannerAd } from '../components/BannerAd';
+import { HeroSlider } from '../components/HeroSlider';
 import { useAuth } from '../context/AuthContext';
 
 const DEFAULT_TEXTS = {
@@ -13,6 +14,10 @@ const DEFAULT_TEXTS = {
   home_how_it_works_title: 'Así de fácil',
   hero_image_url: '/hero-professionals.webp',
   hero_image_link: '',
+  hero_image_url_2: '',
+  hero_image_link_2: '',
+  hero_image_url_3: '',
+  hero_image_link_3: '',
 };
 
 export function Home() {
@@ -30,6 +35,12 @@ export function Home() {
     apiFetchPublic('/api/professionals?limit=8').then(setProfessionals).catch(() => setProfessionals([]));
     apiFetchPublic('/api/site-texts').then(t => setTexts({ ...DEFAULT_TEXTS, ...t })).catch(() => {});
   }, []);
+
+  const heroSlides = [
+    { url: texts.hero_image_url, link: texts.hero_image_link },
+    { url: texts.hero_image_url_2, link: texts.hero_image_link_2 },
+    { url: texts.hero_image_url_3, link: texts.hero_image_link_3 },
+  ].filter(s => s.url);
 
   function handleSearch(e) {
     e.preventDefault();
@@ -51,13 +62,7 @@ export function Home() {
         <div className="tm-hero-art">
           <div className="tm-circle tm-yellow" />
           <div className="tm-circle tm-blue" />
-          {texts.hero_image_link ? (
-            <a href={texts.hero_image_link} target="_blank" rel="noopener noreferrer">
-              <img className="tm-hero-photo" src={texts.hero_image_url} alt="Profesionales de limpieza y mantenimiento de TuMaraña.com" />
-            </a>
-          ) : (
-            <img className="tm-hero-photo" src={texts.hero_image_url} alt="Profesionales de limpieza y mantenimiento de TuMaraña.com" />
-          )}
+          <HeroSlider slides={heroSlides} />
         </div>
         <form className="tm-search" onSubmit={handleSearch}>
           <div className="tm-field"><span>⌕</span><div><small>¿QUÉ SERVICIO NECESITAS?</small>

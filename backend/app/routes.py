@@ -126,7 +126,8 @@ def admin_update_site_text(key):
     token, _ = require_admin()
     d = request.get_json(silent=True) or {}
     value = str(d.get('value', '')).strip()[:1000]
-    if not value and key not in {'hero_image_link'}:
+    optional_keys = {'hero_image_link', 'hero_image_url_2', 'hero_image_url_3', 'hero_image_link_2', 'hero_image_link_3'}
+    if not value and key not in optional_keys:
         return jsonify({'error': 'El texto no puede estar vacío'}), 400
     try:
         rows = rest('site_texts', {'key': f'eq.{key}'}, method='PATCH', data={'value': value}, token=token, prefer='return=representation')
