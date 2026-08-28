@@ -40,8 +40,8 @@ a{color:inherit}
 /* Hero */
 .tm-hero-full{max-width:1240px;margin:auto;padding:32px 42px 40px}
 .tm-kicker{display:inline-block;color:#f7a900;font-size:11px;font-weight:900;letter-spacing:2px;margin-bottom:18px}
-.tm-hero-slider-wrap{position:relative;border-radius:20px;overflow:hidden;height:440px;box-shadow:0 14px 40px #0a31501a}
-.tm-hero-slide-img{width:100%;height:100%;object-fit:cover;display:block}
+.tm-hero-slider-wrap{position:relative;border-radius:20px;overflow:hidden;height:440px;box-shadow:0 14px 40px #0a31501a;background:#f8fafc}
+.tm-hero-slide-img{width:100%;height:100%;object-fit:contain;display:block}
 .tm-hero-dots{position:absolute;z-index:6;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
 .tm-search{margin:-30px auto 0;position:relative;z-index:7;max-width:1000px;background:#fff;border:1px solid #e0e7ef;border-radius:14px;padding:7px;display:grid;grid-template-columns:1.25fr 1fr 1fr 130px;box-shadow:0 14px 35px #0a31501a}
 .tm-field{display:flex;gap:9px;align-items:center;padding:7px 14px;border-right:1px solid #e7edf3}
@@ -210,8 +210,8 @@ a{color:inherit}
 
 /* Banner Ad */
 .tm-banner-ad{max-width:1400px;margin:42px auto;padding:0 42px;position:relative}
-.tm-banner-container{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px #092d4b0f;height:420px}
-.tm-banner-image{width:100%;height:100%;object-fit:cover;display:block}
+.tm-banner-container{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px #092d4b0f;height:420px;background:#f8fafc}
+.tm-banner-image{width:100%;height:100%;object-fit:contain;display:block}
 .tm-banner-link{position:absolute;top:0;left:0;width:100%;height:100%;cursor:pointer}
 .tm-banner-controls{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center;z-index:10}
 .tm-banner-btn{border:0;background:#fff;color:#0a3a75;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:18px;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px #092d4b1a;transition:.2s}

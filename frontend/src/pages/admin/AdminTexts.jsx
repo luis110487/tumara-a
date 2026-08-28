@@ -109,11 +109,11 @@ export function AdminTexts() {
               <div style={{ width: '100%' }}>
                 <p style={{ fontWeight: 800, fontSize: '13px', marginBottom: '10px' }}>{slot.label}</p>
                 {url ? (
-                  <img src={url} alt={slot.label} style={{ width: '100%', maxWidth: '360px', aspectRatio: '1240 / 440', objectFit: 'cover', borderRadius: '10px', marginBottom: '10px', display: 'block' }} />
+                  <img src={url} alt={slot.label} style={{ width: '100%', maxWidth: '360px', aspectRatio: '1240 / 440', objectFit: 'contain', background: '#f8fafc', borderRadius: '10px', marginBottom: '10px', display: 'block' }} />
                 ) : (
                   <div className="empty" style={{ maxWidth: '360px', marginBottom: '10px' }}>Sin imagen</div>
                 )}
-                <p style={{ fontSize: '10px', color: 'var(--tm-muted)', marginTop: '-4px', marginBottom: '10px' }}>Vista previa con la proporción real del slider (se recorta para llenar el espacio).</p>
+                <p style={{ fontSize: '10px', color: 'var(--tm-muted)', marginTop: '-4px', marginBottom: '10px' }}>Vista previa a escala real del slider (la imagen se ajusta completa, sin recortar).</p>
                 <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
                   <label className="link-btn" style={{ cursor: savingKey === slot.urlKey ? 'default' : 'pointer' }}>
                     {savingKey === slot.urlKey ? 'Subiendo...' : url ? 'Cambiar imagen' : 'Subir imagen'}

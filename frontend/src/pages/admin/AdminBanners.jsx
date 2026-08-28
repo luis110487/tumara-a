@@ -136,12 +136,12 @@ export function AdminBanners() {
 
           <label>O pegar URL de imagen<input name="image_url" defaultValue={editingBanner?.image_url || ''} maxLength={500} placeholder="https://..." /></label>
           {(preview || editingBanner?.image_url) && (
-            <div style={{ marginBottom: '4px', borderRadius: '8px', overflow: 'hidden' }}>
-              <img src={preview || editingBanner.image_url} alt="Preview" style={{ width: '100%', aspectRatio: '1300 / 420', objectFit: 'cover', display: 'block' }} />
+            <div style={{ marginBottom: '4px', borderRadius: '8px', overflow: 'hidden', background: '#f8fafc' }}>
+              <img src={preview || editingBanner.image_url} alt="Preview" style={{ width: '100%', aspectRatio: '1300 / 420', objectFit: 'contain', display: 'block' }} />
             </div>
           )}
           {(preview || editingBanner?.image_url) && (
-            <p style={{ fontSize: '10px', color: 'var(--tm-muted)', marginTop: '0', marginBottom: '12px' }}>Vista previa con la proporción real del banner (se recorta para llenar el espacio).</p>
+            <p style={{ fontSize: '10px', color: 'var(--tm-muted)', marginTop: '0', marginBottom: '12px' }}>Vista previa a escala real del banner (la imagen se ajusta completa, sin recortar).</p>
           )}
 
           <label>Link (opcional)<input name="link" defaultValue={editingBanner?.link || ''} maxLength={500} placeholder="https://..." /></label>

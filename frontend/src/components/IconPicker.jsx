@@ -1,13 +1,9 @@
-const ICONS = [
-  '🔧', '💡', '🎨', '🪚', '🧹', '❄️', '🧱', '🔑',
-  '🚗', '💻', '🏠', '🛠️', '🚰', '🪑', '🧰', '🌳',
-  '🔌', '🚪', '🧯', '📦', '🧴', '🚿', '🪛', '🧲',
-];
+import { CategoryIcon, ICON_KEYS } from './CategoryIcon';
 
 export function IconPicker({ value, onChange }) {
   return (
     <div className="icon-picker">
-      {ICONS.map(icon => (
+      {ICON_KEYS.map(icon => (
         <button
           key={icon}
           type="button"
@@ -15,7 +11,7 @@ export function IconPicker({ value, onChange }) {
           onClick={() => onChange(icon)}
           aria-label={`Usar icono ${icon}`}
         >
-          {icon}
+          <CategoryIcon name={icon} size={18} />
         </button>
       ))}
     </div>
