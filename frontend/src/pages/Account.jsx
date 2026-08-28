@@ -53,6 +53,7 @@ export function Account() {
         setMsg({ text: 'Cuenta creada. Inicia sesión para continuar.', ok: true });
         return;
       }
+      apiFetch('/api/welcome-email', { method: 'POST' }).catch(() => {});
       navigate('/');
       return;
     }
@@ -61,6 +62,8 @@ export function Account() {
       setMsg({ text: 'Cuenta creada. Inicia sesión para completar tu registro profesional.', ok: true });
       return;
     }
+
+    apiFetch('/api/welcome-email', { method: 'POST' }).catch(() => {});
 
     try {
       setUploading(true);

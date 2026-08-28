@@ -4,6 +4,14 @@ import string
 
 from flask import Blueprint, request, jsonify, abort
 from .supabase_client import rest, rpc, auth_user, auth_signup, auth_admin_set_password, auth_admin_list_emails, SupabaseError
+from .email_client import (
+    send_professional_approved_email,
+    send_professional_rejected_email,
+    send_welcome_email,
+    send_new_request_email,
+    send_status_change_email,
+    send_new_review_email,
+)
 
 main = Blueprint('main', __name__)
 
@@ -68,6 +76,16 @@ def api_me():
     if not profs:
         return jsonify({'error': 'Perfil no encontrado'}), 404
     return jsonify(profs[0])
+
+
+@main.post('/api/welcome-email')
+def api_welcome_email():
+    token, user = require_user()
+    email = user.get('email')
+    full_name = (user.get('user_metadata') or {}).get('full_name') or email or 'Usuario'
+    if email:
+        send_welcome_email(email, full_name)
+    return jsonify({'ok': True})
 
 
 @main.patch('/api/me')
@@ -321,6 +339,16 @@ def api_request_create():
             'address': str(d.get('address', '')).strip()[:250],
             'preferred_date': d.get('preferred_date') or None,
         }, token=token, prefer='return=representation')
+        try:
+            pros = rest('professionals', {'select': 'user_id,display_name', 'id': f'eq.{professional_id}', 'limit': '1'}, token=token)
+            if pros and pros[0].get('user_id'):
+                emails = auth_admin_list_emails()
+                email = emails.get(pros[0]['user_id'])
+                if email:
+                    customer_name = (user.get('user_metadata') or {}).get('full_name') or user.get('email', 'Un cliente')
+                    send_new_request_email(email, pros[0]['display_name'], customer_name, title)
+        except SupabaseError:
+            pass
         return jsonify(rows[0]), 201
     except SupabaseError as e:
         return api_error(e)
@@ -377,6 +405,15 @@ def api_request_review(request_id):
             'rating': rating,
             'comment': comment,
         }, token=token, prefer='return=representation')
+        try:
+            pros = rest('professionals', {'select': 'user_id,display_name', 'id': f'eq.{req["professional_id"]}', 'limit': '1'}, token=token)
+            if pros and pros[0].get('user_id'):
+                emails = auth_admin_list_emails()
+                email = emails.get(pros[0]['user_id'])
+                if email:
+                    send_new_review_email(email, pros[0]['display_name'], rating, comment)
+        except SupabaseError:
+            pass
         return jsonify(review[0]), 201
     except SupabaseError as e:
         if 'duplicate key' in str(e).lower():
@@ -386,7 +423,7 @@ def api_request_review(request_id):
 
 @main.patch('/api/requests/<int:request_id>/status')
 def api_request_status(request_id):
-    token, _ = require_user()
+    token, user = require_user()
     d = request.get_json(silent=True) or {}
     status = d.get('status')
     if status not in VALID_STATUSES:
@@ -395,7 +432,24 @@ def api_request_status(request_id):
         rows = rest('service_requests', {'id': f'eq.{request_id}'}, method='PATCH', data={'status': status}, token=token, prefer='return=representation')
         if not rows:
             return jsonify({'error': 'No autorizado o solicitud inexistente'}), 404
-        return jsonify(rows[0])
+        req = rows[0]
+        try:
+            pros = rest('professionals', {'select': 'user_id,display_name', 'id': f'eq.{req["professional_id"]}', 'limit': '1'}, token=token)
+            pro = pros[0] if pros else None
+            emails = auth_admin_list_emails()
+            if pro and user['id'] == req['customer_id'] and pro.get('user_id'):
+                email = emails.get(pro['user_id'])
+                if email:
+                    send_status_change_email(email, pro['display_name'], req['service_title'], status)
+            elif pro and user['id'] == pro.get('user_id'):
+                email = emails.get(req['customer_id'])
+                if email:
+                    customer_name = rest('profiles', {'select': 'full_name', 'id': f'eq.{req["customer_id"]}', 'limit': '1'}, token=token)
+                    name = customer_name[0]['full_name'] if customer_name else 'Cliente'
+                    send_status_change_email(email, name, req['service_title'], status)
+        except SupabaseError:
+            pass
+        return jsonify(req)
     except SupabaseError as e:
         return api_error(e)
 
@@ -439,7 +493,19 @@ def admin_set_professional_status(professional_id, action):
         rows = rest('professionals', {'id': f'eq.{professional_id}'}, method='PATCH', data={'status': status, 'verified': verified}, token=token, prefer='return=representation')
         if not rows:
             return jsonify({'error': 'Profesional no encontrado'}), 404
-        return jsonify(rows[0])
+        pro = rows[0]
+        if action in ('approve', 'reject') and pro.get('user_id'):
+            try:
+                emails = auth_admin_list_emails()
+                email = emails.get(pro['user_id'])
+                if email:
+                    if action == 'approve':
+                        send_professional_approved_email(email, pro['display_name'])
+                    else:
+                        send_professional_rejected_email(email, pro['display_name'])
+            except SupabaseError:
+                pass
+        return jsonify(pro)
     except SupabaseError as e:
         return api_error(e)
 
