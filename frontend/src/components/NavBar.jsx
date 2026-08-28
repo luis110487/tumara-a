@@ -25,7 +25,7 @@ export function NavBar() {
         <Link to="/" onClick={closeMenu}>Inicio</Link>
         <Link to="/buscar" onClick={closeMenu}>Categorías</Link>
         <Link to="/buscar" onClick={closeMenu}>Profesionales</Link>
-        <Link to="/mis-solicitudes" onClick={closeMenu}>Solicitudes</Link>
+        {session && <Link to="/mis-solicitudes" onClick={closeMenu}>Solicitudes</Link>}
         {session && <Link to="/mi-perfil" onClick={closeMenu}>Mi perfil</Link>}
         {role === 'professional' && <Link to="/mi-perfil-profesional" onClick={closeMenu}>Mi perfil profesional</Link>}
         <a href="/#como-funciona" onClick={closeMenu}>Cómo funciona</a>
