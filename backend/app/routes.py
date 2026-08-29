@@ -11,6 +11,7 @@ from .email_client import (
     send_new_request_email,
     send_status_change_email,
     send_new_review_email,
+    send_new_message_email,
 )
 
 main = Blueprint('main', __name__)
@@ -456,13 +457,33 @@ def api_request_status(request_id):
 
 @main.post('/api/requests/<int:request_id>/messages')
 def api_message(request_id):
-    token, _ = require_user()
+    token, user = require_user()
     d = request.get_json(silent=True) or {}
     body = str(d.get('body', '')).strip()[:3000]
     if not body:
         return jsonify({'error': 'Mensaje obligatorio'}), 400
     try:
-        rows = rest('messages', method='POST', data={'request_id': request_id, 'sender_id': auth_user(token)['id'], 'body': body}, token=token, prefer='return=representation')
+        rows = rest('messages', method='POST', data={'request_id': request_id, 'sender_id': user['id'], 'body': body}, token=token, prefer='return=representation')
+        try:
+            req_rows = rest('service_requests', {'select': 'customer_id,professional_id,service_title', 'id': f'eq.{request_id}', 'limit': '1'}, token=token)
+            if req_rows:
+                req = req_rows[0]
+                pros = rest('professionals', {'select': 'user_id,display_name', 'id': f'eq.{req["professional_id"]}', 'limit': '1'}, token=token)
+                pro = pros[0] if pros else None
+                emails = auth_admin_list_emails()
+                sender_name = (user.get('user_metadata') or {}).get('full_name') or user.get('email', 'Alguien')
+                if user['id'] == req['customer_id'] and pro and pro.get('user_id'):
+                    to_email = emails.get(pro['user_id'])
+                    if to_email:
+                        send_new_message_email(to_email, pro['display_name'], sender_name, req['service_title'], body)
+                elif pro and user['id'] == pro.get('user_id'):
+                    to_email = emails.get(req['customer_id'])
+                    if to_email:
+                        customer_rows = rest('profiles', {'select': 'full_name', 'id': f'eq.{req["customer_id"]}', 'limit': '1'}, token=token)
+                        recipient_name = customer_rows[0]['full_name'] if customer_rows else 'Cliente'
+                        send_new_message_email(to_email, recipient_name, sender_name, req['service_title'], body)
+        except SupabaseError:
+            pass
         return jsonify(rows[0]), 201
     except SupabaseError as e:
         return api_error(e)

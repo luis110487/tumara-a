@@ -97,6 +97,21 @@ def send_status_change_email(to_email, recipient_name, service_title, status):
     return send_email(to_email, f'Tu solicitud está: {label} - TuMaraña.com', html)
 
 
+def send_new_message_email(to_email, recipient_name, sender_name, service_title, body):
+    preview = body[:200] + ('…' if len(body) > 200 else '')
+    html = f'''
+    <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto">
+      <h2 style="color:#092653">Nuevo mensaje en tu solicitud</h2>
+      <p>Hola {recipient_name},</p>
+      <p><b>{sender_name}</b> te escribió en la solicitud <b>{service_title}</b>:</p>
+      <p style="background:#f8fafc;border-radius:8px;padding:12px 14px;color:#334155">"{preview}"</p>
+      <p>Ingresa a TuMaraña.com para responder.</p>
+      <p style="margin-top:24px;color:#6d7c8e;font-size:12px">TuMaraña.com — Conectamos necesidades con habilidades</p>
+    </div>
+    '''
+    return send_email(to_email, f'{sender_name} te escribió - TuMaraña.com', html)
+
+
 def send_new_review_email(to_email, professional_name, rating, comment):
     stars = '★' * rating + '☆' * (5 - rating)
     comment_html = f'<p style="color:#6d7c8e">"{comment}"</p>' if comment else ''
