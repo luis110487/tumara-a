@@ -101,6 +101,15 @@ def api_me_update():
         data['full_name'] = full_name
     if 'phone' in d:
         data['phone'] = str(d.get('phone', '')).strip()[:20] or None
+    if 'city' in d:
+        data['city'] = str(d.get('city', '')).strip()[:100] or None
+    if 'address' in d:
+        data['address'] = str(d.get('address', '')).strip()[:250] or None
+    if 'avatar_url' in d:
+        avatar_url = str(d.get('avatar_url', '')).strip()[:500]
+        if not avatar_url:
+            return jsonify({'error': 'La URL de la foto no puede estar vacía'}), 400
+        data['avatar_url'] = avatar_url
     if not data:
         return jsonify({'error': 'Nada para actualizar'}), 400
     try:
