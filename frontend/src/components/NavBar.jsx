@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Logo } from './Logo';
+import { AdminNotificationBell } from './AdminNotificationBell';
 
 export function NavBar() {
   const { session, signOut, isAdmin, role } = useAuth();
@@ -43,6 +44,7 @@ export function NavBar() {
         </div>
       </nav>
       <div className="nav-actions">
+        {isAdmin && <AdminNotificationBell />}
         {session && <Link to="/mis-solicitudes" className="nav-messages">💬 Mensajes</Link>}
         {session ? (
           <button className="btn outline" type="button" onClick={handleLogout}>Cerrar sesión</button>

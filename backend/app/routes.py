@@ -620,6 +620,48 @@ def admin_list_requests():
         return api_error(e)
 
 
+@main.get('/api/admin/notifications')
+def admin_list_notifications():
+    token, _ = require_admin()
+    try:
+        rows = rest('admin_notifications', {'select': '*', 'order': 'created_at.desc', 'limit': '30'}, token=token)
+    except SupabaseError as e:
+        return api_error(e)
+    return jsonify(rows)
+
+
+@main.get('/api/admin/notifications/unread-count')
+def admin_notifications_unread_count():
+    token, _ = require_admin()
+    try:
+        _, total = rest('admin_notifications', {'select': 'id', 'is_read': 'eq.false'}, token=token, with_count=True)
+    except SupabaseError as e:
+        return api_error(e)
+    return jsonify({'count': total or 0})
+
+
+@main.patch('/api/admin/notifications/<int:notification_id>/read')
+def admin_mark_notification_read(notification_id):
+    token, _ = require_admin()
+    try:
+        rows = rest('admin_notifications', {'id': f'eq.{notification_id}'}, method='PATCH', data={'is_read': True}, token=token, prefer='return=representation')
+        if not rows:
+            return jsonify({'error': 'No encontrada'}), 404
+        return jsonify(rows[0])
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.post('/api/admin/notifications/read-all')
+def admin_mark_all_notifications_read():
+    token, _ = require_admin()
+    try:
+        rest('admin_notifications', {'is_read': 'eq.false'}, method='PATCH', data={'is_read': True}, token=token)
+    except SupabaseError as e:
+        return api_error(e)
+    return jsonify({'ok': True})
+
+
 @main.get('/api/admin/users')
 def admin_list_users():
     token, _ = require_admin()
