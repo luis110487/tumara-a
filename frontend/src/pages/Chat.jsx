@@ -110,12 +110,30 @@ export function Chat() {
             </div>
           )}
           <div className="messages">
+            {data && (
+              <div className="request-card">
+                <small>DETALLE DE LA SOLICITUD</small>
+                <p className="request-card-title">{data.service_title}</p>
+                {data.description && <p>{data.description}</p>}
+                <ul>
+                  {data.city && <li><b>Ciudad:</b> {data.city}</li>}
+                  {data.address && <li><b>Dirección:</b> {data.address}</li>}
+                  {data.preferred_date && <li><b>Fecha preferida:</b> {data.preferred_date}</li>}
+                </ul>
+              </div>
+            )}
             {data?.messages?.map(m => (
               <div key={m.id} className={`bubble ${m.sender_id === user?.id ? 'mine' : ''}`}>
                 <small>{m.sender_id === user?.id ? 'Tú' : 'Participante'}</small>
                 <div>{m.body}</div>
               </div>
             ))}
+            {data && data.messages?.length === 0 && (
+              <p className="messages-empty">
+                Todavía no hay mensajes en esta conversación.
+                {data.is_customer ? ' Escribe el primero para coordinar los detalles.' : ' Saluda al cliente para empezar.'}
+              </p>
+            )}
           </div>
           <form className="composer" onSubmit={handleSend}>
             <input value={body} onChange={e => setBody(e.target.value)} maxLength={3000} placeholder="Escribe un mensaje…" autoComplete="off" required />
