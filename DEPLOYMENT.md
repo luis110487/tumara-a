@@ -41,6 +41,11 @@ Variables:
 SUPABASE_URL=https://xxxxx.supabase.co
 SUPABASE_ANON_KEY=xxxxx
 FRONTEND_ORIGIN=https://tumarana.vercel.app
+APP_BASE_URL=https://tumara-a.vercel.app
+ACTION_TOKEN_SECRET=cadena-larga-aleatoria
+RESEND_API_KEY=re_xxxxx
+RESEND_FROM_EMAIL=TuMarana.com <notificaciones@tudominio.com>
+SUPPORT_EMAIL=soporte@tudominio.com
 FORCE_HTTPS=true
 ```
 

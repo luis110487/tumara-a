@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { apiFetch, AuthRequiredError } from '../lib/apiClient';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
@@ -11,10 +11,14 @@ export function Chat() {
   const [data, setData] = useState(null);
   const [msg, setMsg] = useState('');
   const [body, setBody] = useState('');
+  const [sending, setSending] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [reviewMsg, setReviewMsg] = useState({ text: '', ok: false });
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const accepted = searchParams.get('aceptada') === '1';
+  const linkError = searchParams.get('error');
   const channelRef = useRef(null);
 
   async function loadChat() {
@@ -40,14 +44,20 @@ export function Chat() {
 
   async function handleSend(e) {
     e.preventDefault();
+    if (sending) return;
     const text = body.trim();
     if (!text) return;
+    setSending(true);
+    setBody('');
+    setMsg('');
     try {
       await apiFetch(`/api/requests/${id}/messages`, { method: 'POST', body: JSON.stringify({ body: text }) });
-      setBody('');
       await loadChat();
     } catch (err) {
+      setBody(text);
       setMsg(err.message);
+    } finally {
+      setSending(false);
     }
   }
 
@@ -92,6 +102,12 @@ export function Chat() {
               </div>
             )}
           </div>
+          {(accepted || linkError) && (
+            <div className={`msg ${accepted ? 'ok' : 'error'}`} style={{ marginBottom: '12px' }}>
+              {accepted ? '¡Solicitud aceptada! Ya puedes coordinar los detalles con el cliente.' : linkError}
+              <button type="button" className="link-btn" onClick={() => setSearchParams({}, { replace: true })} style={{ marginLeft: '10px' }}>Cerrar</button>
+            </div>
+          )}
           <div className="messages">
             {data?.messages?.map(m => (
               <div key={m.id} className={`bubble ${m.sender_id === user?.id ? 'mine' : ''}`}>
@@ -102,7 +118,7 @@ export function Chat() {
           </div>
           <form className="composer" onSubmit={handleSend}>
             <input value={body} onChange={e => setBody(e.target.value)} maxLength={3000} placeholder="Escribe un mensaje…" autoComplete="off" required />
-            <button type="submit">➤</button>
+            <button type="submit" disabled={sending}>➤</button>
           </form>
           {msg && <div className="msg error">{msg}</div>}
         </div>

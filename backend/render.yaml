@@ -13,5 +13,15 @@ services:
         sync: false
       - key: FRONTEND_ORIGIN
         value: "https://tumara-a.vercel.app"
+      - key: APP_BASE_URL
+        value: "https://tumara-a.vercel.app"
+      - key: ACTION_TOKEN_SECRET
+        generateValue: true
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+      - key: SUPPORT_EMAIL
+        sync: false
       - key: FORCE_HTTPS
         value: "true"

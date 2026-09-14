@@ -76,6 +76,16 @@ def admin_headers():
         'Accept': 'application/json',
     }
 
+def rest_admin(table, params=None, method='GET', data=None, prefer=None):
+    url, h = admin_headers()
+    if prefer:
+        h['Prefer'] = prefer
+    r = requests.request(method, f'{url}/rest/v1/{table}', params=params, headers=h, json=data, timeout=15)
+    if r.status_code >= 400:
+        raise SupabaseError(f'Supabase REST {r.status_code}: {r.text[:800]}')
+    return r.json() if r.text else []
+
+
 def auth_admin_set_password(user_id, new_password):
     url, h = admin_headers()
     r = requests.put(f'{url}/auth/v1/admin/users/{user_id}', headers=h, json={'password': new_password}, timeout=15)
