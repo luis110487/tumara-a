@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiFetch, apiFetchPublic, AuthRequiredError } from '../lib/apiClient';
+import { loginRedirectState } from '../lib/loginRedirect';
 import { CityPicker } from '../components/CityPicker';
 
 export function RequestService() {
   const { id } = useParams();
   const [p, setP] = useState(null);
   const [msg, setMsg] = useState('');
+  const [sending, setSending] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -15,7 +17,9 @@ export function RequestService() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (sending) return;
     const f = e.target;
+    setSending(true);
     try {
       const j = await apiFetch('/api/requests', {
         method: 'POST',
@@ -30,7 +34,8 @@ export function RequestService() {
       });
       navigate(`/solicitud/${j.id}/chat`);
     } catch (err) {
-      if (err instanceof AuthRequiredError) return navigate('/cuenta');
+      setSending(false);
+      if (err instanceof AuthRequiredError) return navigate('/cuenta', loginRedirectState());
       setMsg(err.message);
     }
   }
@@ -52,7 +57,7 @@ export function RequestService() {
           <CityPicker name="city" value={p.city} />
           <label>Dirección / zona<input name="address" maxLength={250} /></label>
           <label>Fecha y horario preferido<input name="date" type="datetime-local" /></label>
-          <button className="btn primary" type="submit">Enviar solicitud y abrir chat</button>
+          <button className="btn primary" type="submit" disabled={sending}>{sending ? 'Enviando…' : 'Enviar solicitud y abrir chat'}</button>
         </form>
         {msg && <div className="msg error">{msg}</div>}
       </div>

@@ -354,23 +354,8 @@ def api_request_create():
             'address': str(d.get('address', '')).strip()[:250],
             'preferred_date': d.get('preferred_date') or None,
         }, token=token, prefer='return=representation')
-        try:
-            pros = rest('professionals', {'select': 'user_id,display_name', 'id': f'eq.{professional_id}', 'limit': '1'}, token=token)
-            if pros and pros[0].get('user_id'):
-                emails = auth_admin_list_emails()
-                email = emails.get(pros[0]['user_id'])
-                if email:
-                    customer_name = (user.get('user_metadata') or {}).get('full_name') or user.get('email', 'Un cliente')
-                    new_id = rows[0]['id']
-                    accept_url = None
-                    try:
-                        token = make_action_token('accept', new_id, pros[0]['user_id'])
-                        accept_url = f'{request.url_root.rstrip("/")}/api/solicitudes/aceptar?t={token}'
-                    except InvalidActionToken:
-                        pass
-                    send_new_request_email(email, pros[0]['display_name'], customer_name, title, new_id, accept_url)
-        except SupabaseError:
-            pass
+        customer_name = (user.get('user_metadata') or {}).get('full_name') or user.get('email', 'Un cliente')
+        in_background(notify_new_request, rows[0]['id'], professional_id, customer_name, title, token, request.url_root)
         return jsonify(rows[0]), 201
     except SupabaseError as e:
         return api_error(e)
@@ -427,15 +412,7 @@ def api_request_review(request_id):
             'rating': rating,
             'comment': comment,
         }, token=token, prefer='return=representation')
-        try:
-            pros = rest('professionals', {'select': 'user_id,display_name', 'id': f'eq.{req["professional_id"]}', 'limit': '1'}, token=token)
-            if pros and pros[0].get('user_id'):
-                emails = auth_admin_list_emails()
-                email = emails.get(pros[0]['user_id'])
-                if email:
-                    send_new_review_email(email, pros[0]['display_name'], rating, comment)
-        except SupabaseError:
-            pass
+        in_background(notify_new_review, req['professional_id'], rating, comment, token)
         return jsonify(review[0]), 201
     except SupabaseError as e:
         if 'duplicate key' in str(e).lower():
@@ -455,25 +432,67 @@ def api_request_status(request_id):
         if not rows:
             return jsonify({'error': 'No autorizado o solicitud inexistente'}), 404
         req = rows[0]
-        try:
-            pros = rest('professionals', {'select': 'user_id,display_name', 'id': f'eq.{req["professional_id"]}', 'limit': '1'}, token=token)
-            pro = pros[0] if pros else None
-            emails = auth_admin_list_emails()
-            if pro and user['id'] == req['customer_id'] and pro.get('user_id'):
-                email = emails.get(pro['user_id'])
-                if email:
-                    send_status_change_email(email, pro['display_name'], req['service_title'], status, request_id)
-            elif pro and user['id'] == pro.get('user_id'):
-                email = emails.get(req['customer_id'])
-                if email:
-                    customer_name = rest('profiles', {'select': 'full_name', 'id': f'eq.{req["customer_id"]}', 'limit': '1'}, token=token)
-                    name = customer_name[0]['full_name'] if customer_name else 'Cliente'
-                    send_status_change_email(email, name, req['service_title'], status, request_id)
-        except SupabaseError:
-            pass
+        in_background(notify_status_change, request_id, req, user['id'], status, token)
         return jsonify(req)
     except SupabaseError as e:
         return api_error(e)
+
+
+def in_background(fn, *args):
+    """Envia las notificaciones por correo sin bloquear la respuesta al usuario."""
+    threading.Thread(target=fn, args=args, daemon=True).start()
+
+
+def notify_new_request(request_id, professional_id, customer_name, service_title, token, url_root):
+    try:
+        pros = rest('professionals', {'select': 'user_id,display_name', 'id': f'eq.{professional_id}', 'limit': '1'}, token=token)
+        if not pros or not pros[0].get('user_id'):
+            return
+        email = auth_admin_list_emails().get(pros[0]['user_id'])
+        if not email:
+            return
+        accept_url = None
+        try:
+            action_token = make_action_token('accept', request_id, pros[0]['user_id'])
+            accept_url = f'{url_root.rstrip("/")}/api/solicitudes/aceptar?t={action_token}'
+        except InvalidActionToken:
+            pass
+        send_new_request_email(email, pros[0]['display_name'], customer_name, service_title, request_id, accept_url)
+    except SupabaseError:
+        pass
+
+
+def notify_new_review(professional_id, rating, comment, token):
+    try:
+        pros = rest('professionals', {'select': 'user_id,display_name', 'id': f'eq.{professional_id}', 'limit': '1'}, token=token)
+        if not pros or not pros[0].get('user_id'):
+            return
+        email = auth_admin_list_emails().get(pros[0]['user_id'])
+        if email:
+            send_new_review_email(email, pros[0]['display_name'], rating, comment)
+    except SupabaseError:
+        pass
+
+
+def notify_status_change(request_id, req, actor_id, status, token):
+    try:
+        pros = rest('professionals', {'select': 'user_id,display_name', 'id': f'eq.{req["professional_id"]}', 'limit': '1'}, token=token)
+        pro = pros[0] if pros else None
+        if not pro:
+            return
+        emails = auth_admin_list_emails()
+        if actor_id == req['customer_id'] and pro.get('user_id'):
+            email = emails.get(pro['user_id'])
+            if email:
+                send_status_change_email(email, pro['display_name'], req['service_title'], status, request_id)
+        elif actor_id == pro.get('user_id'):
+            email = emails.get(req['customer_id'])
+            if email:
+                rows = rest('profiles', {'select': 'full_name', 'id': f'eq.{req["customer_id"]}', 'limit': '1'}, token=token)
+                name = rows[0]['full_name'] if rows else 'Cliente'
+                send_status_change_email(email, name, req['service_title'], status, request_id)
+    except SupabaseError:
+        pass
 
 
 def notify_new_message(request_id, user, token, body):
@@ -533,7 +552,7 @@ def api_message(request_id):
         return jsonify({'error': 'Mensaje obligatorio'}), 400
     try:
         rows = rest('messages', method='POST', data={'request_id': request_id, 'sender_id': user['id'], 'body': body}, token=token, prefer='return=representation')
-        threading.Thread(target=notify_new_message, args=(request_id, user, token, body), daemon=True).start()
+        in_background(notify_new_message, request_id, user, token, body)
         return jsonify(rows[0]), 201
     except SupabaseError as e:
         return api_error(e)
