@@ -374,6 +374,15 @@ def api_request_get(request_id):
             return jsonify({'error': 'Profesional no encontrado'}), 404
         if req['customer_id'] != user['id'] and pros[0]['user_id'] != user['id']:
             return jsonify({'error': 'No autorizado'}), 403
+        # Cuando el profesional abre una solicitud nueva, pasa a "En conversación".
+        if req['status'] == 'requested' and pros[0]['user_id'] == user['id']:
+            try:
+                updated = rest('service_requests', {'id': f'eq.{request_id}', 'select': REQUEST_FIELDS}, method='PATCH', data={'status': 'in_conversation'}, token=token, prefer='return=representation')
+                if updated:
+                    req = updated[0]
+                    in_background(notify_status_change, request_id, req, user['id'], 'in_conversation', token)
+            except SupabaseError:
+                pass
         msgs = rest('messages', {'select': 'id,request_id,sender_id,body,is_read,created_at', 'request_id': f'eq.{request_id}', 'order': 'created_at.asc'}, token=token)
         reviews = rest('reviews', {'select': 'id,rating,comment,created_at', 'request_id': f'eq.{request_id}', 'limit': '1'}, token=token)
         req['professional'] = {'id': pros[0]['id'], 'display_name': pros[0]['display_name'], 'is_mine': pros[0]['user_id'] == user['id']}
