@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiFetch, AuthRequiredError } from '../lib/apiClient';
+import { loginRedirectState } from '../lib/loginRedirect';
 import { supabase } from '../lib/supabaseClient';
 import { CityPicker } from '../components/CityPicker';
 import { StatusBadge } from '../components/StatusBadge';
@@ -34,7 +35,7 @@ export function MyProfile() {
     apiFetch('/api/me')
       .then(setProfile)
       .catch(err => {
-        if (err instanceof AuthRequiredError) return navigate('/cuenta');
+        if (err instanceof AuthRequiredError) return navigate('/cuenta', loginRedirectState());
       })
       .finally(() => setLoading(false));
 

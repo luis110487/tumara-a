@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiFetch, apiFetchPublic, AuthRequiredError } from '../lib/apiClient';
+import { loginRedirectState } from '../lib/loginRedirect';
 import { supabase } from '../lib/supabaseClient';
 import { uploadEvidencePhoto } from '../lib/uploadEvidence';
 import { CityPicker } from '../components/CityPicker';
@@ -42,7 +43,7 @@ export function MyProfessionalProfile() {
     apiFetch('/api/professionals/mine')
       .then(p => { setProfile(p); setNotFound(false); })
       .catch(err => {
-        if (err instanceof AuthRequiredError) return navigate('/cuenta');
+        if (err instanceof AuthRequiredError) return navigate('/cuenta', loginRedirectState());
         setNotFound(true);
       })
       .finally(() => setLoading(false));

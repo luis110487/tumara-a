@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiFetch, apiFetchPublic, AuthRequiredError } from '../lib/apiClient';
+import { loginRedirectState } from '../lib/loginRedirect';
 import { uploadEvidencePhoto } from '../lib/uploadEvidence';
 import { CityPicker } from '../components/CityPicker';
 import { useAuth } from '../context/AuthContext';
@@ -76,7 +77,7 @@ export function RegisterProfessional() {
       setFormKey(k => k + 1);
     } catch (err) {
       setUploading(false);
-      if (err instanceof AuthRequiredError) return navigate('/cuenta');
+      if (err instanceof AuthRequiredError) return navigate('/cuenta', loginRedirectState());
       setMsg({ text: err.message, ok: false });
     }
   }

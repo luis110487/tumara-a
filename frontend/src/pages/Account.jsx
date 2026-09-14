@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { apiFetch, apiFetchPublic } from '../lib/apiClient';
 import { uploadEvidencePhoto } from '../lib/uploadEvidence';
@@ -14,6 +14,9 @@ export function Account() {
   const [done, setDone] = useState(null);
   const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  // Si llegamos aqui desde una ruta protegida, volvemos a ella al iniciar sesion.
+  const destino = location.state?.from || '/';
 
   useEffect(() => {
     apiFetchPublic('/api/categories').then(setCategories).catch(() => setCategories([]));
@@ -25,7 +28,7 @@ export function Account() {
     const password = e.target.password.value;
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return setMsg({ text: error.message, ok: false });
-    navigate('/');
+    navigate(destino, { replace: true });
   }
 
   async function handleSignup(e) {
@@ -54,7 +57,7 @@ export function Account() {
         return;
       }
       apiFetch('/api/welcome-email', { method: 'POST' }).catch(() => {});
-      navigate('/');
+      navigate(destino, { replace: true });
       return;
     }
 

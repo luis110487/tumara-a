@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiFetch, AuthRequiredError } from '../lib/apiClient';
+import { loginRedirectState } from '../lib/loginRedirect';
 import { StatusBadge } from '../components/StatusBadge';
 
 function RequestRow({ r }) {
@@ -24,7 +25,7 @@ export function MyRequests() {
     apiFetch('/api/requests/mine')
       .then(setData)
       .catch(err => {
-        if (err instanceof AuthRequiredError) return navigate('/cuenta');
+        if (err instanceof AuthRequiredError) return navigate('/cuenta', loginRedirectState());
         setError(err.message);
       });
   }, [navigate]);

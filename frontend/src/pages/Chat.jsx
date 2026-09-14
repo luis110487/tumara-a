@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { apiFetch, AuthRequiredError } from '../lib/apiClient';
+import { loginRedirectState } from '../lib/loginRedirect';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { StatusBadge, STATUS_OPTIONS } from '../components/StatusBadge';
@@ -26,7 +27,7 @@ export function Chat() {
       const j = await apiFetch(`/api/requests/${id}`);
       setData(j);
     } catch (err) {
-      if (err instanceof AuthRequiredError) return navigate('/cuenta');
+      if (err instanceof AuthRequiredError) return navigate('/cuenta', loginRedirectState());
       setMsg(err.message);
     }
   }
