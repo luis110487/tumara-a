@@ -2,6 +2,8 @@ import html as html_mod
 import os
 import re
 import requests
+import logging
+log = logging.getLogger(__name__)
 
 RESEND_API_URL = 'https://api.resend.com/emails'
 APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://tumara-a.vercel.app').rstrip('/')
@@ -60,8 +62,12 @@ def html_to_text(raw):
 
 def send_email(to_email, subject, html):
     api_key = os.environ.get('RESEND_API_KEY', '')
-    from_email = os.environ.get('RESEND_FROM_EMAIL', 'onboarding@resend.dev')
+    from_email = os.environ.get('RESEND_FROM_EMAIL', 'TuMaraña <info@techdatasync.com>')
     if not api_key or not to_email:
+        log.warning('Transactional email unavailable: missing provider key or recipient')
+        return False
+    if '@resend.dev' in from_email:
+        log.warning('Transactional email blocked: configure a verified production sender')
         return False
     support = support_line()
     support_html = f'<br />{support}' if support else ''
@@ -83,18 +89,26 @@ def send_email(to_email, subject, html):
             json={
                 'from': from_email,
                 'to': [to_email],
-                'subject': subject,
+                'subject': subject.replace('\r',' ').replace('\n',' '),
+                'reply_to': os.environ.get('SUPPORT_EMAIL', 'info@techdatasync.com'),
                 'html': wrapped,
                 'text': html_to_text(wrapped),
             },
             timeout=10,
         )
-        return r.status_code < 400
-    except requests.RequestException:
+        if r.status_code >= 400:
+            try: code=r.json().get('name','provider_error')
+            except ValueError: code='provider_error'
+            log.warning('Transactional email rejected status=%s code=%s',r.status_code,code)
+            return False
+        return True
+    except requests.RequestException as error:
+        log.warning('Transactional email failed transport=%s',type(error).__name__)
         return False
 
 
 def send_professional_approved_email(to_email, display_name):
+    display_name = html_mod.escape(str(display_name or ''))
     html = f'''
     <h2 style="color:#092653">¡Tu perfil fue aprobado!</h2>
     <p>Hola {display_name},</p>
@@ -106,6 +120,7 @@ def send_professional_approved_email(to_email, display_name):
 
 
 def send_welcome_email(to_email, full_name):
+    full_name = html_mod.escape(str(full_name or ''))
     html = f'''
     <h2 style="color:#092653">¡Bienvenido a TuMaraña.com!</h2>
     <p>Hola {full_name},</p>
@@ -116,6 +131,7 @@ def send_welcome_email(to_email, full_name):
 
 
 def send_professional_rejected_email(to_email, display_name):
+    display_name = html_mod.escape(str(display_name or ''))
     html = f'''
     <h2 style="color:#092653">Tu perfil profesional no fue aprobado</h2>
     <p>Hola {display_name},</p>
@@ -127,6 +143,9 @@ def send_professional_rejected_email(to_email, display_name):
 
 
 def send_new_request_email(to_email, professional_name, customer_name, service_title, request_id=None, accept_url=None):
+    professional_name = html_mod.escape(str(professional_name or ''))
+    customer_name = html_mod.escape(str(customer_name or ''))
+    service_title = html_mod.escape(str(service_title or ''))
     cta = ''
     if accept_url:
         cta += button(accept_url, '✓ Aceptar solicitud', '#16a34a')
@@ -154,6 +173,8 @@ STATUS_LABELS = {
 
 
 def send_status_change_email(to_email, recipient_name, service_title, status, request_id=None):
+    recipient_name = html_mod.escape(str(recipient_name or ''))
+    service_title = html_mod.escape(str(service_title or ''))
     label = STATUS_LABELS.get(status, status)
     cta = button(chat_url(request_id), 'Ver la solicitud') if request_id else ''
     html = f'''
@@ -167,7 +188,10 @@ def send_status_change_email(to_email, recipient_name, service_title, status, re
 
 
 def send_new_message_email(to_email, recipient_name, sender_name, service_title, body, request_id=None):
-    preview = body[:200] + ('…' if len(body) > 200 else '')
+    recipient_name = html_mod.escape(str(recipient_name or ''))
+    sender_name = html_mod.escape(str(sender_name or ''))
+    service_title = html_mod.escape(str(service_title or ''))
+    preview = html_mod.escape(body[:200] + ('…' if len(body) > 200 else ''))
     cta = button(chat_url(request_id), 'Responder mensaje') if request_id else ''
     html = f'''
     <h2 style="color:#092653">Nuevo mensaje en tu solicitud</h2>
@@ -180,6 +204,8 @@ def send_new_message_email(to_email, recipient_name, sender_name, service_title,
 
 
 def send_new_review_email(to_email, professional_name, rating, comment):
+    professional_name = html_mod.escape(str(professional_name or ''))
+    comment = html_mod.escape(str(comment or ''))
     stars = '★' * rating + '☆' * (5 - rating)
     comment_html = f'<p style="color:#6d7c8e">"{comment}"</p>' if comment else ''
     html = f'''

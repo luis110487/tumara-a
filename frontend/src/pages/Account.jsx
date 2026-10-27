@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { authFeedback } from '../lib/authFeedback';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { apiFetch, apiFetchPublic } from '../lib/apiClient';
@@ -10,9 +11,12 @@ export function Account() {
   const [signupType, setSignupType] = useState('cliente');
   const [categories, setCategories] = useState([]);
   const [msg, setMsg] = useState({ text: '', ok: false });
-  const [showRecover, setShowRecover] = useState(false);
+  const [showRecover, setShowRecover] = useState(new URLSearchParams(window.location.search).get('recover') === '1');
   const [done, setDone] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const recoveryLock=useRef(false);
+  const recoveryAfter=useRef(0);
+  const [recovering,setRecovering]=useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   // Si llegamos aqui desde una ruta protegida, volvemos a ella al iniciar sesion.
@@ -104,13 +108,17 @@ export function Account() {
 
   async function handleRecover(e) {
     e.preventDefault();
-    const email = e.target.email.value;
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/restablecer-contrasena`,
-    });
-    if (error) return setMsg({ text: error.message, ok: false });
-    setMsg({ text: 'Si el correo existe, te enviamos un enlace para restablecer la contraseña.', ok: true });
-    setShowRecover(false);
+    if(recoveryLock.current) return;
+    if(Date.now()<recoveryAfter.current){setMsg({text:'Espera un minuto antes de solicitar otro enlace.',ok:false});return;}
+    const email=e.currentTarget.email.value.trim();
+    recoveryLock.current=true;setRecovering(true);setMsg({text:'',ok:false});
+    try {
+      const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:`${window.location.origin}/restablecer-contrasena`});
+      if(error) throw error;
+      recoveryAfter.current=Date.now()+60000;
+      setMsg({text:'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.',ok:true});
+    } catch(error){setMsg({text:authFeedback(error),ok:false});}
+    finally{recoveryLock.current=false;setRecovering(false);}
   }
 
   return (
@@ -137,7 +145,7 @@ export function Account() {
             <h2 className="requests-subhead">Recuperar contraseña</h2>
             <form onSubmit={handleRecover}>
               <label>Email<input type="email" name="email" autoComplete="email" required /></label>
-              <button className="btn primary" type="submit">Enviar enlace de recuperación</button>
+              <button className="btn primary" type="submit" disabled={recovering}>{recovering ? 'Enviando…' : 'Enviar enlace de recuperación'}</button>
               <button className="btn outline" type="button" onClick={() => setShowRecover(false)}>Volver a iniciar sesión</button>
             </form>
           </>

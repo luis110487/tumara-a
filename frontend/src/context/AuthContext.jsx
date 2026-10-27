@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [profileFor, setProfileFor] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -22,14 +23,17 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!session) {
       setProfile(null);
+      setProfileFor(null);
       setProfileLoading(false);
       return;
     }
+    let active = true;
     setProfileLoading(true);
     apiFetch('/api/me')
-      .then(setProfile)
-      .catch(() => setProfile(null))
-      .finally(() => setProfileLoading(false));
+      .then(data => { if(active) setProfile(data); })
+      .catch(() => { if(active) setProfile(null); })
+      .finally(() => { if(active) { setProfileFor(session.user.id); setProfileLoading(false); } });
+    return () => { active = false; };
   }, [session]);
 
   const value = {
@@ -39,7 +43,7 @@ export function AuthProvider({ children }) {
     profile,
     role: profile?.role ?? null,
     isAdmin: profile?.role === 'admin',
-    profileLoading,
+    profileLoading: loading || profileLoading || Boolean(session && profileFor !== session.user.id),
     signOut: () => supabase.auth.signOut(),
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

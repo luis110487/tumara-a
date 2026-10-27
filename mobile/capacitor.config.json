@@ -1,0 +1,11 @@
+{
+  "appId": "com.tumarana.app",
+  "appName": "TuMaraña",
+  "webDir": "dist",
+  "server": {
+    "hostname": "tumara-a.vercel.app",
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "android": { "allowMixedContent": false }
+}

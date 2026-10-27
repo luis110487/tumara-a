@@ -949,3 +949,25 @@ def admin_delete_banner(banner_id):
         return jsonify({'ok': True}), 204
     except SupabaseError as e:
         return api_error(e)
+
+
+@main.route('/api/push/devices', methods=['POST','DELETE'])
+def api_push_device():
+    import uuid
+    import datetime as dt
+    _, user = require_user()
+    data=request.get_json(silent=True) or {}
+    try: installation=str(uuid.UUID(str(data.get('installationId',''))))
+    except ValueError: return jsonify({'error':'Identificador de dispositivo inválido'}),400
+    try:
+        if request.method=='DELETE':
+            rest_admin('push_devices',{'installation_id':f'eq.{installation}','user_id':f'eq.{user["id"]}'},method='DELETE')
+        else:
+            token=data.get('token')
+            if not isinstance(token,str) or not 10<=len(token)<=4096:return jsonify({'error':'Token de notificaciones inválido'}),400
+            profiles=rest_admin('profiles',{'select':'is_active','id':f'eq.{user["id"]}','limit':'1'})
+            if not profiles or not profiles[0].get('is_active',True):return jsonify({'error':'Cuenta inactiva'}),403
+            rest_admin('push_devices',{'on_conflict':'installation_id'},method='POST',data={'installation_id':installation,'user_id':user['id'],'token':token,'enabled':True,'updated_at':dt.datetime.now(dt.timezone.utc).isoformat()},prefer='resolution=merge-duplicates')
+        return jsonify({'ok':True})
+    except SupabaseError:
+        return jsonify({'error':'No pudimos registrar las notificaciones del dispositivo.'}),503
