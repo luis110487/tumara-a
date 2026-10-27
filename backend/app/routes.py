@@ -180,8 +180,6 @@ def api_professionals_list():
     params = {'select': PROFESSIONAL_FIELDS, 'status': 'eq.approved', 'order': 'verified.desc,rating.desc'}
     if city:
         params['city'] = f'eq.{city}'
-    if limit.isdigit():
-        params['limit'] = limit
     try:
         pros = rest('professionals', params)
     except SupabaseError:
@@ -190,8 +188,13 @@ def api_professionals_list():
     if cat.isdigit():
         pros = [p for p in pros if str(p['category_id']) == cat]
     if q:
-        needle = q.lower()
-        pros = [p for p in pros if needle in (p.get('display_name', '') + ' ' + p.get('description', '') + ' ' + p.get('category', '')).lower()]
+        import unicodedata
+        def normalized(value):
+            return ''.join(char for char in unicodedata.normalize('NFD', str(value or '')) if unicodedata.category(char) != 'Mn').casefold()
+        words = normalized(q).split()
+        pros = [p for p in pros if all(word in normalized(' '.join(str(p.get(field) or '') for field in ('display_name', 'description', 'category'))) for word in words)]
+    if limit.isdigit():
+        pros = pros[:max(1, min(int(limit), 100))]
     return jsonify(pros)
 
 

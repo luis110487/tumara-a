@@ -1,3 +1,4 @@
+import { ProfessionalSearch } from '../components/ProfessionalSearch';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiFetchPublic } from '../lib/apiClient';
@@ -71,7 +72,7 @@ export function Home() {
 
     <form className="home-search" role="search" onSubmit={event => { event.preventDefault(); navigate(results(), { state: { from: '/' } }); }}>
       <label className="home-query"><AppIcon name="search" size={21} /><span className="home-sr-only">Servicio o profesional</span>
-        <input name="q" value={q} onChange={event => setQ(event.target.value)} placeholder="Ej. plomero, electricista…" maxLength={200} enterKeyHint="search" autoComplete="off" />
+        <ProfessionalSearch value={q} onChange={setQ} city={city} categories={categories} professionals={professionals} maxLength={100} />
       </label>
       <label className="home-location home-search-location"><AppIcon name="pin" size={21} /><span className="home-sr-only">Ciudad para buscar profesionales</span>
         <CitySelect value={city} onChange={changeCity} placeholder="Tu ciudad o municipio" /><AppIcon name="down" size={18} />

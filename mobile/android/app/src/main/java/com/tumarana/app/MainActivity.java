@@ -36,6 +36,12 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(DeviceNotificationsPlugin.class);
         super.onCreate(state);
         if (getBridge() == null) return;
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() {
+                if (contentReady && onboarding == null && splash == null && getBridge() != null)
+                    getBridge().getWebView().evaluateJavascript("window.dispatchEvent(new Event('tm:android-back'));", null);
+            }
+        });
         useLightBars();
         splash = new BrandSplashView(this);
         addContentView(splash, new FrameLayout.LayoutParams(
@@ -53,7 +59,7 @@ public class MainActivity extends BridgeActivity {
             onboarding.setVisibility(View.INVISIBLE);
             onboardingBack = new OnBackPressedCallback(false) {
                 @Override public void handleOnBackPressed() {
-                    if (onboarding != null && !onboarding.previousPage()) finish();
+                    if (onboarding != null && !onboarding.previousPage()) completeOnboarding();
                 }
             };
             getOnBackPressedDispatcher().addCallback(this, onboardingBack);

@@ -1,4 +1,5 @@
 import { PushLifecycle } from './components/PushNotifications';
+import { AndroidBack } from './components/AndroidBack';
 import { Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -27,7 +28,7 @@ import { AdminTexts } from './pages/admin/AdminTexts';
 
 export default function App() {
   return (
-    <><PushLifecycle /><Routes>
+    <><AndroidBack /><PushLifecycle /><Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/favoritos" element={<Favorites />} />

@@ -1,4 +1,5 @@
 import { cleanPhotoFields } from '../lib/photoSource';
+import { PhotoViewer } from '../components/PhotoViewer';
 import { WorkPhoto } from '../components/WorkPhoto';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
@@ -17,12 +18,13 @@ export function ProfessionalProfile() {
   const [retry, setRetry] = useState(0);
   const [reviewsRetry, setReviewsRetry] = useState(0);
   const [tab, setTab] = useState('info');
+  const [viewer, setViewer] = useState(null);
   const [notice, setNotice] = useState('');
   const [photoFailed, setPhotoFailed] = useState(false);
   const { has, toggle } = useLocalFavorites();
   useEffect(() => {
     let active = true;
-    setP(null); setError(false); setPhotoFailed(false); setTab('info'); setNotice('');
+    setViewer(null); setP(null); setError(false); setPhotoFailed(false); setTab('info'); setNotice('');
     apiFetchPublic(`/api/professionals/${id}`).then(data => {
       if (!data || !data.id || !data.display_name) throw new Error('Invalid profile');
       if (active) setP(cleanPhotoFields(data));
@@ -74,8 +76,9 @@ export function ProfessionalProfile() {
       {tab === 'info' && <><h2>Sobre mí</h2><p>{p.description || 'Este profesional aún no ha añadido una descripción.'}</p>{p.experience_years != null && <div className="pro-experience"><AppIcon name="tools" size={22} /><span><strong>{p.experience_years} {Number(p.experience_years) === 1 ? 'año' : 'años'}</strong> de experiencia</span></div>}</>}
       {tab === 'services' && <><h2>Servicios</h2><div className="pro-service"><AppIcon name="tools" /><div><strong>{p.category || 'Servicios profesionales'}</strong><p>Describe el trabajo que necesitas al solicitar el servicio. El profesional confirmará el alcance y la disponibilidad.</p></div></div></>}
       {tab === 'reviews' && <><h2>Reseñas de clientes</h2>{reviewsState === 'loading' ? <p role="status">Cargando reseñas…</p> : reviewsState === 'error' ? <div role="alert"><p>No pudimos cargar las reseñas.</p><button className="pro-secondary" onClick={() => setReviewsRetry(value => value + 1)}>Reintentar reseñas</button></div> : reviews.length ? <div className="pro-reviews">{reviews.map((review, index) => { const rating = Math.max(0, Math.min(5, Math.round(Number(review.rating) || 0))); return <article key={review.id || index}><span className="pro-review-stars" aria-label={`${rating} de 5 estrellas`}>{'★'.repeat(rating)}{'☆'.repeat(5 - rating)}</span><p>{review.comment || 'Este cliente dejó una calificación sin comentario.'}</p></article>; })}</div> : <p>Aún no hay reseñas publicadas para este profesional.</p>}</>}
-      {tab === 'gallery' && <><h2>Trabajos realizados</h2>{evidence.length ? <div className="pro-gallery">{evidence.map(({ url, number }) => <WorkPhoto key={url} url={url} number={number} />)}</div> : <p>Este profesional aún no ha publicado fotos de sus trabajos.</p>}</>}
+      {tab === 'gallery' && <><h2>Trabajos realizados</h2>{evidence.length ? <div className="pro-gallery">{evidence.map(({ url, number }, index) => <WorkPhoto key={url} url={url} number={number} onOpen={() => setViewer(index)} />)}</div> : <p>Este profesional aún no ha publicado fotos de sus trabajos.</p>}</>}
     </div>
+    {viewer !== null && <PhotoViewer photos={evidence} initialIndex={viewer} onClose={() => setViewer(null)} />}
     <div className="pro-request-bar"><Link className="pro-primary" to={`/solicitar/${p.id}`}><AppIcon name="chat" size={20} />Solicitar servicio</Link></div>
   </section>;
 }
