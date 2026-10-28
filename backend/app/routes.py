@@ -964,13 +964,38 @@ def api_push_device():
     except ValueError: return jsonify({'error':'Identificador de dispositivo inválido'}),400
     try:
         if request.method=='DELETE':
-            rest_admin('push_devices',{'installation_id':f'eq.{installation}','user_id':f'eq.{user["id"]}'},method='DELETE')
+            rest_admin('push_devices',{'installation_id':f'eq.{installation}','user_id':f'eq.{user["id"]}'},method='PATCH',data={'enabled':False})
         else:
             token=data.get('token')
+            platform=data.get('platform','android')
+            if platform not in ('android','web'):return jsonify({'error':'Plataforma inválida'}),400
             if not isinstance(token,str) or not 10<=len(token)<=4096:return jsonify({'error':'Token de notificaciones inválido'}),400
             profiles=rest_admin('profiles',{'select':'is_active','id':f'eq.{user["id"]}','limit':'1'})
             if not profiles or not profiles[0].get('is_active',True):return jsonify({'error':'Cuenta inactiva'}),403
-            rest_admin('push_devices',{'on_conflict':'installation_id'},method='POST',data={'installation_id':installation,'user_id':user['id'],'token':token,'enabled':True,'updated_at':dt.datetime.now(dt.timezone.utc).isoformat()},prefer='resolution=merge-duplicates')
+            rest_admin('push_devices',{'on_conflict':'installation_id'},method='POST',data={'installation_id':installation,'user_id':user['id'],'token':token,'platform':platform,'enabled':True,'updated_at':dt.datetime.now(dt.timezone.utc).isoformat()},prefer='resolution=merge-duplicates')
         return jsonify({'ok':True})
     except SupabaseError:
         return jsonify({'error':'No pudimos registrar las notificaciones del dispositivo.'}),503
+
+
+@main.get('/api/push/status')
+def api_push_status():
+    import uuid
+    from .push_delivery import configured
+    _, user = require_user()
+    if not configured(): return jsonify({'ready':False,'registered':False})
+    installation=request.args.get('installationId','')
+    if installation:
+        try: installation=str(uuid.UUID(installation))
+        except ValueError: return jsonify({'error':'Identificador inválido'}),400
+    try:
+        profiles=rest_admin('profiles',{'select':'is_active','id':f'eq.{user["id"]}','limit':'1'})
+        if not profiles or not profiles[0].get('is_active',True):return jsonify({'error':'Cuenta inactiva'}),403
+        params={'select':'installation_id','user_id':f'eq.{user["id"]}','enabled':'eq.true','limit':'1'}
+        if installation:params['installation_id']='eq.'+installation
+        devices=rest_admin('push_devices',params)
+        # Query the queue schema as well, so an unapplied migration cannot advertise readiness.
+        rest_admin('push_outbox',{'select':'id,claim_token,expires_at','limit':'1'})
+        return jsonify({'ready':True,'registered':bool(installation and devices)})
+    except SupabaseError:
+        return jsonify({'ready':False,'registered':False})

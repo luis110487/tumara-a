@@ -15,7 +15,7 @@ function dateLabel(value, timeOnly = false) {
 export function Chat() {
   const { id } = useParams();
   const location = useLocation();
-  const backTo = /^\/mis-solicitudes(?:\?|$)/.test(location.state?.from || '') ? location.state.from : '/mis-solicitudes';
+  const backTo = /^\/(?:mis-solicitudes(?:\?|$)|mi-perfil$)/.test(location.state?.from || '') ? location.state.from : '/mis-solicitudes';
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [msg, setMsg] = useState('');
@@ -98,7 +98,7 @@ export function Chat() {
   const messages = Array.isArray(data?.messages) ? data.messages : [];
   const name = data?.is_customer ? data.professional?.display_name || 'Profesional' : 'Cliente';
   return <section className="mobile-chat">
-    <header className="mobile-chat-header"><Link to={backTo} aria-label="Volver a mis solicitudes"><AppIcon name="back" /></Link><h1>Mensajes</h1><button type="button" aria-label="Ver detalles de la solicitud" disabled={!data} onClick={() => { detailsRef.current.open = !detailsRef.current.open; }}><AppIcon name="dots" /></button></header>
+    <header className="mobile-chat-header"><Link to={backTo} state={backTo === '/mi-perfil' ? { panel: location.state?.returnPanel } : undefined} aria-label={backTo === '/mi-perfil' ? 'Volver a mi perfil' : 'Volver a mis solicitudes'}><AppIcon name="back" /></Link><h1>Mensajes</h1><button type="button" aria-label="Ver detalles de la solicitud" disabled={!data} onClick={() => { detailsRef.current.open = !detailsRef.current.open; }}><AppIcon name="dots" /></button></header>
     {data && <div className="mobile-chat-person"><span className="mobile-chat-avatar">{name[0]}</span><div><strong>{name}</strong><small>{data.service_title}</small></div><button type="button" aria-label="Actualizar conversación" onClick={loadChat}><AppIcon name="refresh" size={21} /></button></div>}
     {(accepted || linkError) && <div className="mobile-chat-notice" role="status"><span>{accepted ? '¡Solicitud aceptada! Ya puedes coordinar los detalles.' : linkError}</span><button onClick={() => { const next = new URLSearchParams(searchParams); next.delete('aceptada'); next.delete('error'); setSearchParams(next, { replace: true }); }}>Cerrar</button></div>}
     {msg && <div className="mobile-chat-error" role="alert"><span>{msg}</span><button type="button" onClick={loadChat}>Actualizar</button></div>}

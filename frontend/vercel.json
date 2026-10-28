@@ -2,8 +2,32 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://tumara-a.onrender.com/api/:path*" },
-    { "source": "/health", "destination": "https://tumara-a.onrender.com/health" },
-    { "source": "/((?!api|health).*)", "destination": "/index.html" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://tumara-a.onrender.com/api/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "https://tumara-a.onrender.com/health"
+    },
+    {
+      "source": "/((?!api|health|firebase-messaging-sw\\.js|assets/).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/firebase-messaging-sw.js",
+      "headers": [
+        {
+          "value": "no-cache, no-store, must-revalidate",
+          "key": "Cache-Control"
+        },
+        {
+          "value": "application/javascript",
+          "key": "Content-Type"
+        }
+      ]
+    }
   ]
 }

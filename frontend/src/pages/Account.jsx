@@ -114,7 +114,7 @@ export function Account() {
     recoveryLock.current=true;setRecovering(true);setMsg({text:'',ok:false});
     try {
       const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:`${window.location.origin}/restablecer-contrasena`});
-      if(error) throw error;
+      if(error && error.code!=='user_not_found') throw error;
       recoveryAfter.current=Date.now()+60000;
       setMsg({text:'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.',ok:true});
     } catch(error){setMsg({text:authFeedback(error),ok:false});}

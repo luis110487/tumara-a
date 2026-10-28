@@ -7,8 +7,8 @@ android {
         applicationId "com.tumarana.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 29
-        versionName "1.16.4-galeria-zoom"
+        versionCode 35
+        versionName "1.16.10-recuperacion"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

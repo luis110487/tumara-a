@@ -66,7 +66,7 @@ export function Home() {
         <AppIcon name="pin" size={19} /><span className="home-sr-only">Ciudad de búsqueda</span>
         <CitySelect value={city} onChange={changeCity} placeholder="Elige tu ciudad" /><AppIcon name="down" size={18} />
       </label>
-      <div className="home-hero-copy"><h1>¿Qué servicio<br />necesitas hoy?</h1><p>Conecta con quien<br />sabe hacerlo.</p></div>
+      <div className="home-hero-copy"><h1><span>¿Qué servicio</span><br /><span>necesitas hoy?</span></h1><p>Conecta con quien<br />sabe hacerlo.</p></div>
       <div className="home-hero-figure" aria-hidden="true"><img src="/hero-professionals.webp" alt="" /></div>
     </section>
 
@@ -104,7 +104,7 @@ export function Home() {
       <div className="home-section-heading"><h2 id="home-featured-title">{texts.home_professionals_title || 'Profesionales destacados'}</h2><Link to={results()} state={{ from: '/' }}>Ver todos</Link></div>
       {professionalState === 'loading' && <p className="home-inline-message" role="status">Buscando profesionales…</p>}
       {professionalState === 'error' && <div className="home-inline-message" role="alert"><p>No pudimos cargar los profesionales. Revisa tu conexión.</p><button type="button" onClick={retry}>Volver a intentar</button></div>}
-      {professionalState === 'ready' && (professionals.length ? <div className="home-pro-list">{professionals.map(p => <MobileProCard key={p.id} professional={p} />)}</div>
+      {professionalState === 'ready' && (professionals.length ? <div className="home-pro-list" role="region" aria-label="Marañeros destacados, desliza para ver más" tabIndex={0} onKeyDown={event => { if (event.target !== event.currentTarget || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return; event.preventDefault(); event.currentTarget.scrollBy({ left: (event.key === 'ArrowRight' ? 1 : -1) * event.currentTarget.clientWidth * .9, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }}>{professionals.map(p => <MobileProCard key={p.id} professional={p} />)}</div>
         : <p className="home-inline-message">Pronto encontrarás profesionales aquí. Mientras tanto, prueba buscar por servicio.</p>)}
     </section>
     {role !== 'professional' && role !== 'admin' && <Link className="home-professional-cta" to="/registrar"><span><strong>¿Ofreces un servicio?</strong><small>Da a conocer tu trabajo en TuMaraña.</small></span><span>Soy profesional →</span></Link>}

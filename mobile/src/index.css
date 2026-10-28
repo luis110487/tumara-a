@@ -293,3 +293,5 @@ a{color:inherit}
   .stats{grid-template-columns:1fr}
   .bubble{max-width:88%}
 }
+
+.push-invite{position:fixed;z-index:110;left:50%;bottom:calc(var(--tm-bottom-nav-height,0px) + 16px);transform:translateX(-50%);box-sizing:border-box;width:calc(100% - 32px);max-width:430px;padding:18px;border:1px solid #d6e3f1;border-radius:16px;background:#fff;color:#12345c;box-shadow:0 12px 36px #0b2d6026}.push-invite p{font-size:13px;line-height:1.5;margin:8px 0 12px}.push-invite>div{display:flex;gap:10px;flex-wrap:wrap}.push-invite button{min-height:44px;padding:10px 14px;border:1px solid #d4dfed;border-radius:10px;background:#f5f8fc;color:#12345c;font:inherit;cursor:pointer}.push-invite button:first-child{background:#ffa800;border-color:#ffa800;font-weight:700}.push-settings{display:grid;gap:12px}.push-settings p{line-height:1.6;margin:0}.profile-push-settings{margin:24px 0;padding:20px;border:1px solid #dce6f1;border-radius:14px}.profile-push-settings h2{font-size:22px;margin:0 0 14px}

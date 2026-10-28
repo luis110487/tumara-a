@@ -1,6 +1,7 @@
+import { ProfileModal } from '../components/ProfileModal';
 import { PushSettings } from '../components/PushNotifications';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { apiFetch, AuthRequiredError } from '../lib/apiClient';
 import { loginRedirectState } from '../lib/loginRedirect';
 import { uploadPhoto as storePhoto, savePhotoUrl, photoError, MAX_PHOTO_BYTES } from '../lib/uploadPhoto';
@@ -15,7 +16,8 @@ export function MyProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
-  const [panel, setPanel] = useState('');
+  const location = useLocation();
+  const [panel, setPanel] = useState(() => MENU.some(([key]) => key === location.state?.panel && !key.startsWith('/')) ? location.state.panel : '');
   const [city, setCity] = useState('');
   const [msg, setMsg] = useState({ text: '', ok: false });
   const [saving, setSaving] = useState(false);
@@ -26,7 +28,6 @@ export function MyProfile() {
   const [requestsState, setRequestsState] = useState('loading');
   const [requestsRetry, setRequestsRetry] = useState(0);
   const saveLock = useRef(false), photoLock = useRef(false), exitLock = useRef(false);
-  const panelRef = useRef(null);
   const [photoRetry, setPhotoRetry] = useState(null);
   const navigate = useNavigate();
   useEffect(() => {
@@ -52,7 +53,6 @@ export function MyProfile() {
     }).catch(() => { if (active) setRequestsState('error'); });
     return () => { active = false; };
   }, [panel, requestsRetry]);
-  useEffect(() => { if (panel) panelRef.current?.focus(); }, [panel]);
   function openPanel(key) { setPanel(key); setCity(profile.city || ''); setMsg({ text: '', ok: false }); }
   async function save(event) {
     event.preventDefault();
@@ -98,23 +98,24 @@ export function MyProfile() {
       {profile.avatar_url && !photoFailed ? <img src={profile.avatar_url} alt="" onError={() => setPhotoFailed(true)} /> : <span className="account-avatar"><AppIcon name="user" size={38} /></span>}
       <span><strong>{profile.full_name || 'Usuario'}</strong><small>{user?.email || 'Cuenta de TuMaraña'}</small></span><span className="account-chevron">›</span>
     </button>
-    {msg.text && <p className={`account-feedback ${msg.ok ? 'is-success' : ''}`} role={msg.ok ? 'status' : 'alert'}>{msg.text}</p>}
-    {photoRetry && <button type="button" className="account-primary" disabled={uploading || saving} onClick={() => uploadPhoto({ target: photoRetry })}>Reintentar foto</button>}
-    <nav className="account-options" aria-label="Opciones de mi perfil">{MENU.map(([key, icon, label]) => key.startsWith('/') ? <Link className="account-option" key={key} to={key}><AppIcon name={icon} size={22} /><span>{label}</span><span className="account-chevron">›</span></Link> : <button className="account-option" type="button" key={key} aria-expanded={panel === key} aria-controls="account-panel" onClick={() => openPanel(key)}><AppIcon name={icon} size={22} /><span>{label}</span><span className="account-chevron">›</span></button>)}
-      {(role === 'professional' || isAdmin) && <Link className="account-option" to="/mi-perfil-profesional"><AppIcon name="tools" size={22} /><span>Mi perfil profesional</span><span className="account-chevron">›</span></Link>}
-      {isAdmin && <Link className="account-option" to="/admin"><AppIcon name="grid" size={22} /><span>Administración</span><span className="account-chevron">›</span></Link>}
+    {!panel && msg.text && <p className={`account-feedback ${msg.ok ? 'is-success' : ''}`} role={msg.ok ? 'status' : 'alert'}>{msg.text}</p>}
+    {!panel && photoRetry && <button type="button" className="account-primary" disabled={uploading || saving} onClick={() => uploadPhoto({ target: photoRetry })}>Reintentar foto</button>}
+    <nav className="account-options" aria-label="Opciones de mi perfil">{MENU.map(([key, icon, label]) => key.startsWith('/') ? <Link className="account-option" key={key} to={key} state={{ from: '/mi-perfil' }}><AppIcon name={icon} size={22} /><span>{label}</span><span className="account-chevron">›</span></Link> : <button className="account-option" type="button" key={key} aria-expanded={panel === key} aria-controls="account-panel" onClick={() => openPanel(key)}><AppIcon name={icon} size={22} /><span>{label}</span><span className="account-chevron">›</span></button>)}
+      {(role === 'professional' || isAdmin) && <Link className="account-option" to="/mi-perfil-profesional" state={{ from: '/mi-perfil' }}><AppIcon name="tools" size={22} /><span>Mi perfil profesional</span><span className="account-chevron">›</span></Link>}
+      {isAdmin && <Link className="account-option" to="/admin" state={{ from: '/mi-perfil' }}><AppIcon name="grid" size={22} /><span>Administración</span><span className="account-chevron">›</span></Link>}
       <button type="button" className="account-option account-logout" onClick={logout} disabled={leaving || saving || uploading}><AppIcon name="logout" size={22} /><span>{leaving ? 'Cerrando sesión…' : 'Cerrar sesión'}</span></button>
     </nav>
-    {panel && <section id="account-panel" className="account-panel" ref={panelRef} tabIndex={-1} aria-label={panelTitle}>
-      <header><h2>{panelTitle}</h2><button type="button" aria-label="Cerrar panel" disabled={saving || uploading} onClick={() => setPanel('')}>×</button></header>
+    {panel && <ProfileModal title={panelTitle} busy={saving || uploading} onClose={() => setPanel('')}>
+      {msg.text && <p className={`account-feedback ${msg.ok ? 'is-success' : ''}`} role={msg.ok ? 'status' : 'alert'}>{msg.text}</p>}
+      {photoRetry && <button type="button" className="account-primary" disabled={uploading || saving} onClick={() => uploadPhoto({ target: photoRetry })}>Reintentar foto</button>}
       {(panel === 'settings' || panel === 'address') && <>
         {panel === 'settings' && <div className="account-photo"><label>{uploading ? 'Subiendo foto…' : 'Cambiar foto'}<input aria-label="Seleccionar foto de perfil" type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading || saving} onChange={uploadPhoto} /></label><small>JPG, PNG o WebP. Máximo 20 MB. Las fotos grandes se optimizan antes de subirlas.</small></div>}
         <form onSubmit={save}><fieldset disabled={saving || uploading}>{panel === 'settings' ? <><label>Nombre completo<input name="full_name" defaultValue={profile.full_name || ''} required maxLength={150} autoComplete="name" /></label><label>Teléfono <small>(opcional)</small><input name="phone" type="tel" defaultValue={profile.phone || ''} maxLength={20} autoComplete="tel" /></label><p className="account-panel-note">Correo de acceso: {user?.email}</p></> : <><label>Ciudad o municipio<CitySelect value={city} onChange={setCity} placeholder="Selecciona tu ciudad" /></label><label>Dirección <small>(opcional)</small><input name="address" defaultValue={profile.address || ''} maxLength={250} autoComplete="street-address" /></label></>}<div className="account-form-actions"><button className="account-primary" type="submit">{saving ? 'Guardando…' : 'Guardar cambios'}</button></div></fieldset></form>
       </>}
-      {panel === 'reviews' && <><p>Abre un servicio completado para consultar tu reseña o dejar una calificación.</p>{requestsState === 'loading' ? <p role="status">Cargando servicios…</p> : requestsState === 'error' ? <div role="alert"><p>No pudimos cargar tus servicios.</p><button className="account-primary" onClick={() => setRequestsRetry(value => value + 1)}>Reintentar servicios</button></div> : requests.length ? <div className="account-review-links">{requests.map(request => <Link key={request.id} to={`/solicitud/${request.id}/chat`}><AppIcon name="star" size={19} /><span>{request.service_title}</span><span>›</span></Link>)}</div> : <p>Aún no tienes servicios completados para calificar.</p>}</>}
-      {panel === 'notifications' && <><p>Consulta los cambios de tus solicitudes y los mensajes desde la app.</p><Link className="account-panel-link" to="/mis-solicitudes">Ver solicitudes y conversaciones</Link><PushSettings /></>}
+      {panel === 'reviews' && <><p>Abre un servicio completado para consultar tu reseña o dejar una calificación.</p>{requestsState === 'loading' ? <p role="status">Cargando servicios…</p> : requestsState === 'error' ? <div role="alert"><p>No pudimos cargar tus servicios.</p><button className="account-primary" onClick={() => setRequestsRetry(value => value + 1)}>Reintentar servicios</button></div> : requests.length ? <div className="account-review-links">{requests.map(request => <Link key={request.id} to={`/solicitud/${request.id}/chat`} state={{ from: '/mi-perfil', returnPanel: 'reviews' }}><AppIcon name="star" size={19} /><span>{request.service_title}</span><span>›</span></Link>)}</div> : <p>Aún no tienes servicios completados para calificar.</p>}</>}
+      {panel === 'notifications' && <><p>Consulta los cambios de tus solicitudes y los mensajes desde la app.</p><Link className="account-panel-link" to="/mis-solicitudes" state={{ from: '/mi-perfil', returnPanel: panel }}>Ver solicitudes y conversaciones</Link><PushSettings /></>}
       {panel === 'payments' && <p>La app todavía no permite añadir tarjetas ni administrar métodos de pago.</p>}
       {panel === 'help' && <div className="account-help"><details><summary>¿Cómo solicito un servicio?</summary><p>Busca un profesional, abre su perfil y pulsa “Solicitar servicio”. Describe tu necesidad y envía la solicitud para abrir el chat.</p></details><details><summary>¿Dónde veo mis conversaciones?</summary><p>En Mensajes, abre la solicitud que quieres consultar.</p></details><details><summary>¿Cómo guardo un profesional?</summary><p>Toca el corazón de su tarjeta o “Guardar” en su perfil. Los favoritos se guardan en este dispositivo.</p></details><details><summary>¿Cómo califico un servicio?</summary><p>Cuando la solicitud esté completada, abre su conversación y entra en los detalles para enviar tu calificación.</p></details></div>}
-    </section>}
+    </ProfileModal>}
   </section>;
 }

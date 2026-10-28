@@ -86,9 +86,9 @@ export function Account() {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: 'https://tumara-a.vercel.app/restablecer-contrasena',
         });
-        if (error) throw error;
+        if (error && error.code !== 'user_not_found') throw error;
         recoveryAfter.current = Date.now() + 60000;
-        if (mounted.current) setMsg({ ok: true, text: 'Si el correo está registrado, recibirás un enlace para cambiar tu contraseña. Ábrelo y después vuelve a iniciar sesión en la app.' });
+        if (mounted.current) setMsg({ ok: true, text: 'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.' });
       } else if (tab === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;

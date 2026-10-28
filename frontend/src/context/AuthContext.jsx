@@ -1,3 +1,4 @@
+import { disablePushForLogout, setPushUser } from '../lib/pushNotifications';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { apiFetch } from '../lib/apiClient';
@@ -13,10 +14,11 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
+      setPushUser(data.session?.user.id || null);
       setSession(data.session);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => { setPushUser(s?.user.id || null); setSession(s); });
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -44,7 +46,7 @@ export function AuthProvider({ children }) {
     role: profile?.role ?? null,
     isAdmin: profile?.role === 'admin',
     profileLoading: loading || profileLoading || Boolean(session && profileFor !== session.user.id),
-    signOut: () => supabase.auth.signOut(),
+    signOut: async () => { try { await disablePushForLogout(); } catch {} const result = await supabase.auth.signOut(); if (result?.error) setPushUser(session?.user.id || null); return result; },
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

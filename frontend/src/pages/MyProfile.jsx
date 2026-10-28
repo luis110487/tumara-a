@@ -1,3 +1,4 @@
+import { PushSettings } from '../components/PushNotifications';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiFetch, AuthRequiredError } from '../lib/apiClient';
@@ -143,6 +144,7 @@ export function MyProfile() {
       )}
       {msg.text && <div className={`msg ${msg.ok ? 'ok' : 'error'}`} style={{ marginBottom: '20px' }}>{msg.text}</div>}
 
+      <section className="profile-push-settings"><h2>Notificaciones</h2><PushSettings /></section>
       <h2 className="requests-subhead">Solicitudes pendientes ({grouped.pendientes.length})</h2>
       <div className="request-list">
         {grouped.pendientes.length ? grouped.pendientes.map(r => <RequestRow r={r} key={r.id} />) : <div className="empty">No tienes solicitudes pendientes.</div>}

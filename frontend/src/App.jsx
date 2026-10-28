@@ -1,3 +1,4 @@
+import { PushLifecycle } from './components/PushNotifications';
 import { Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -24,7 +25,7 @@ import { AdminTexts } from './pages/admin/AdminTexts';
 
 export default function App() {
   return (
-    <Routes>
+    <><PushLifecycle /><Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/buscar" element={<SearchResults />} />
@@ -48,6 +49,6 @@ export default function App() {
         </Route>
         <Route path="*" element={<NotFound />} />
       </Route>
-    </Routes>
+    </Routes></>
   );
 }
