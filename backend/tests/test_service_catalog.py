@@ -40,7 +40,8 @@ class ValidationTests(unittest.TestCase):
   with self.assertRaises(ValueError):sc.validate_service({'price_cop':5},USER,True)
 
 class ApiTests(unittest.TestCase):
- def setUp(self):self.client=create_app().test_client()
+ def setUp(self):
+  app=create_app();app.config['SUPABASE_URL']='https://example.supabase.co';self.client=app.test_client()
  def rest(self,table,params=None,method='GET',data=None,**kwargs):
   if table=='profiles':return [{'id':USER,'is_active':True}]
   if table=='professionals':return [{'id':7,'status':'approved'}]
@@ -101,5 +102,17 @@ class ApiTests(unittest.TestCase):
   with patch.object(routes,'require_user',return_value=('token',{'id':USER})),patch.object(routes,'rest',return_value=[]) as rest:
    self.assertEqual(self.client.post('/api/requests',json={'professional_id':7,'service_id':8,'service_title':'Servicio','description':'Necesito ayuda'}).status_code,400)
    self.assertFalse(any(call.kwargs.get('method')=='POST' for call in rest.call_args_list))
+ def test_request_photos_must_belong_to_customer_folder(self):
+  with patch.object(routes,'require_user',return_value=('token',{'id':USER})),patch.object(routes,'rest') as rest:
+   response=self.client.post('/api/requests',json={'professional_id':7,'service_title':'Servicio','description':'Necesito ayuda','photo_urls':['https://evil.test/photo.jpg']})
+   self.assertEqual(response.status_code,400);rest.assert_not_called()
+ def test_request_accepts_up_to_three_owned_photos(self):
+  prefix=f'https://example.supabase.co/storage/v1/object/public/request-photos/{USER}/'
+  def rest(table,params=None,method='GET',data=None,**kwargs):return [{'id':9,**data}] if table=='service_requests' else []
+  with patch.object(routes,'require_user',return_value=('token',{'id':USER})),patch.object(routes,'rest',side_effect=rest) as mocked,patch.object(routes,'in_background'):
+   response=self.client.post('/api/requests',json={'professional_id':7,'service_title':'Servicio','description':'Necesito ayuda','photo_urls':[prefix+'one.jpg',prefix+'two.webp']})
+   self.assertEqual(response.status_code,201)
+   post=next(call for call in mocked.call_args_list if call.kwargs.get('method')=='POST')
+   self.assertEqual(len(post.kwargs['data']['photo_urls']),2)
 
 if __name__=='__main__':unittest.main(verbosity=2)

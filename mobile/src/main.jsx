@@ -10,6 +10,7 @@ import './categories.css';
 import './results.css';
 import './professional-profile.css';
 import './request-service.css';
+import './profile-screen.css';
 import './mobile-chat.css';
 import './account-menu.css';
 import './my-requests.css';

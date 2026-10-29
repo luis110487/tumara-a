@@ -40,7 +40,7 @@ export async function preparePhoto(file) {
   } finally { URL.revokeObjectURL(url); }
 }
 export async function uploadPhoto(file, bucket = 'avatars') {
-  if (!['avatars', 'evidence', 'service-photos'].includes(bucket)) throw new Error('Almacenamiento de fotos inválido.');
+  if (!['avatars', 'evidence', 'service-photos', 'request-photos'].includes(bucket)) throw new Error('Almacenamiento de fotos inválido.');
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new AuthRequiredError();
   const cacheKey = `${session.user.id}:${bucket}`;
@@ -50,7 +50,7 @@ export async function uploadPhoto(file, bucket = 'avatars') {
   const pending = (async () => {
     const prepared = await preparePhoto(file);
     const suffix = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const name = bucket === 'service-photos' ? `${session.user.id}/${suffix}.${prepared.extension}` : `${session.user.id}-${suffix}.${prepared.extension}`;
+    const name = ['service-photos', 'request-photos'].includes(bucket) ? `${session.user.id}/${suffix}.${prepared.extension}` : `${session.user.id}-${suffix}.${prepared.extension}`;
     const storage = supabase.storage.from(bucket);
     const { error } = await storage.upload(name, prepared.blob, { cacheControl: '3600', upsert: false, contentType: prepared.type });
     if (error) throw error;

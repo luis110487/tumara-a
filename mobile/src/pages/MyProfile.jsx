@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { CitySelect } from '../components/CitySelect';
 import { AppIcon } from '../components/AppIcon';
 
-const MENU = [['/mis-solicitudes', 'clipboard', 'Mis solicitudes'], ['/favoritos', 'heart', 'Mis favoritos'], ['reviews', 'star', 'Mis reseñas'], ['notifications', 'bell', 'Notificaciones'], ['payments', 'card', 'Métodos de pago'], ['address', 'pin', 'Mi dirección'], ['settings', 'settings', 'Configuración'], ['help', 'help', 'Centro de ayuda']];
+const MENU = [['/mis-solicitudes', 'clipboard', 'Mis solicitudes'], ['/favoritos', 'heart', 'Mis favoritos'], ['address', 'pin', 'Direcciones'], ['payments', 'card', 'Métodos de pago'], ['notifications', 'bell', 'Notificaciones'], ['help', 'help', 'Soporte'], ['settings', 'settings', 'Configuración']];
 export function MyProfile() {
   const { user, signOut, isAdmin, role } = useAuth();
   const [profile, setProfile] = useState(null);
@@ -94,10 +94,12 @@ export function MyProfile() {
   if (error) return <section className="account-menu"><div className="account-menu-state" role="alert"><h1>Tu perfil no está disponible</h1><p>{error}</p><button className="account-primary" onClick={() => setRetry(value => value + 1)}>Reintentar</button></div></section>;
   const panelTitle = MENU.find(([key]) => key === panel)?.[2];
   return <section className="account-menu">
-    <button className="account-identity" type="button" onClick={() => openPanel('settings')} aria-label="Editar mis datos de perfil">
+    <div className="account-identity">
+      <button className="account-identity-main" type="button" onClick={() => openPanel('settings')} aria-label="Editar mis datos de perfil">
       {profile.avatar_url && !photoFailed ? <img src={profile.avatar_url} alt="" onError={() => setPhotoFailed(true)} /> : <span className="account-avatar"><AppIcon name="user" size={38} /></span>}
-      <span><strong>{profile.full_name || 'Usuario'}</strong><small>{user?.email || 'Cuenta de TuMaraña'}</small></span><span className="account-chevron">›</span>
-    </button>
+      <span><strong>{profile.full_name || 'Usuario'}</strong><small>{user?.email || 'Cuenta de TuMaraña'}</small><em>Editar perfil</em></span>
+      </button><button className="account-settings-trigger" type="button" onClick={() => openPanel('settings')} aria-label="Abrir configuración"><AppIcon name="settings" size={20} /></button>
+    </div>
     {!panel && msg.text && <p className={`account-feedback ${msg.ok ? 'is-success' : ''}`} role={msg.ok ? 'status' : 'alert'}>{msg.text}</p>}
     {!panel && photoRetry && <button type="button" className="account-primary" disabled={uploading || saving} onClick={() => uploadPhoto({ target: photoRetry })}>Reintentar foto</button>}
     <nav className="account-options" aria-label="Opciones de mi perfil">{MENU.map(([key, icon, label]) => key.startsWith('/') ? <Link className="account-option" key={key} to={key} state={{ from: '/mi-perfil' }}><AppIcon name={icon} size={22} /><span>{label}</span><span className="account-chevron">›</span></Link> : <button className="account-option" type="button" key={key} aria-expanded={panel === key} aria-controls="account-panel" onClick={() => openPanel(key)}><AppIcon name={icon} size={22} /><span>{label}</span><span className="account-chevron">›</span></button>)}

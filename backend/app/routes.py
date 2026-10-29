@@ -4,7 +4,7 @@ import string
 import threading
 from urllib.parse import quote
 
-from flask import Blueprint, request, jsonify, abort, redirect
+from flask import Blueprint, request, jsonify, abort, redirect, current_app
 from .supabase_client import rest, rest_admin, rpc, auth_user, auth_signup, auth_admin_set_password, auth_admin_list_emails, SupabaseError
 from .action_tokens import make_action_token, read_action_token, InvalidActionToken
 from .email_client import (
@@ -22,7 +22,7 @@ from .email_client import (
 main = Blueprint('main', __name__)
 
 PROFESSIONAL_FIELDS = 'id,display_name,city,neighborhood,description,experience_years,rating,total_reviews,verified,category_id,whatsapp,photo_url,evidence_url_1,evidence_url_2'
-REQUEST_FIELDS = 'id,professional_id,customer_id,service_title,description,city,address,preferred_date,status,created_at,updated_at,service_id,service_snapshot'
+REQUEST_FIELDS = 'id,professional_id,customer_id,service_title,description,city,address,preferred_date,status,created_at,updated_at,service_id,service_snapshot,photo_urls'
 VALID_STATUSES = {'requested', 'in_conversation', 'quoted', 'accepted', 'in_progress', 'completed', 'cancelled'}
 PROFESSIONAL_STATUSES = {'pending', 'approved', 'rejected', 'suspended'}
 PROFESSIONAL_ACTIONS = {'approve': ('approved', True), 'reject': ('rejected', False), 'suspend': ('suspended', False)}
@@ -330,6 +330,14 @@ def api_requests_mine():
         pro_id = mine_pro[0]['id'] if mine_pro else None
         as_customer = rest('service_requests', {'select': REQUEST_FIELDS, 'customer_id': f'eq.{user["id"]}', 'order': 'updated_at.desc'}, token=token)
         as_professional = rest('service_requests', {'select': REQUEST_FIELDS, 'professional_id': f'eq.{pro_id}', 'order': 'updated_at.desc'}, token=token) if pro_id else []
+        professional_ids = sorted({int(row['professional_id']) for row in [*as_customer, *as_professional] if row.get('professional_id') is not None})
+        professionals = rest('professionals', {'select': 'id,display_name,photo_url', 'id': f'in.({",".join(map(str, professional_ids))})'}, token=token) if professional_ids else []
+        professional_map = {int(row['id']): row for row in professionals}
+        for row in [*as_customer, *as_professional]:
+            pro = professional_map.get(int(row['professional_id']))
+            if pro:
+                row['professional_name'] = pro.get('display_name')
+                row['professional_photo_url'] = pro.get('photo_url')
         return jsonify({'as_customer': as_customer, 'as_professional': as_professional})
     except SupabaseError as e:
         return api_error(e)
@@ -352,6 +360,13 @@ def api_request_create():
     description = str(d.get('description', '')).strip()[:5000]
     if not title or not description:
         return jsonify({'error': 'Faltan campos obligatorios'}), 400
+    photo_urls=d.get('photo_urls',[])
+    if not isinstance(photo_urls,list) or len(photo_urls)>3 or any(not isinstance(url,str) or len(url)>1000 for url in photo_urls):
+        return jsonify({'error':'Fotos de la solicitud inválidas'}),400
+    if photo_urls:
+        storage_prefix=f'{current_app.config["SUPABASE_URL"].rstrip("/")}/storage/v1/object/public/request-photos/{user["id"]}/'
+        if any(not url.startswith(storage_prefix) or '?' in url or '#' in url or '/..' in url for url in photo_urls):
+            return jsonify({'error':'Fotos de la solicitud inválidas'}),400
     try:
         if service_id is not None:
             selected=rest('professional_services',{'select':'id,title','id':f'eq.{service_id}','professional_id':f'eq.{professional_id}','is_active':'eq.true','limit':'1'},token=token)
@@ -365,6 +380,7 @@ def api_request_create():
             'city': str(d.get('city', '')).strip()[:100],
             'address': str(d.get('address', '')).strip()[:250],
             'preferred_date': d.get('preferred_date') or None,
+            'photo_urls': photo_urls,
             **({'service_id':service_id} if service_id is not None else {}),
         }, token=token, prefer='return=representation')
         title=rows[0]['service_title']
