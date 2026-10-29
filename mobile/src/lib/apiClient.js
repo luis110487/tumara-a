@@ -44,6 +44,6 @@ export async function apiFetchPublic(path) {
   } catch {
     // no body
   }
-  if (!res.ok) throw new Error(body.detail || body.error || 'No fue posible completar la operación');
+  if (!res.ok) { const error = new Error(body.detail || body.error || 'No fue posible completar la operación'); error.status = res.status; throw error; }
   return body;
 }

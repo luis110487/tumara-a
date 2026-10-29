@@ -8,6 +8,8 @@ import { CityPicker } from '../components/CityPicker';
 import { AppIcon } from '../components/AppIcon';
 import { useAuth } from '../context/AuthContext';
 import { readSelectedCity } from '../lib/selectedCity';
+import { ServiceEditor } from './MyServices';
+import { servicePrice } from '../lib/serviceCatalog';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 function EvidenceField({ number, disabled }) {
@@ -28,6 +30,8 @@ export function RegisterProfessional() {
   const [msg, setMsg] = useState('');
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [addingService, setAddingService] = useState(false);
+  const [createdServices, setCreatedServices] = useState([]);
   const lock = useRef(false);
   const uploaded = useRef(new WeakMap());
   const navigate = useNavigate();
@@ -77,7 +81,14 @@ export function RegisterProfessional() {
   }
   const header = <header className="pro-signup-header"><Link to="/" aria-label="Volver al inicio"><AppIcon name="back" /></Link><span>Registro profesional</span></header>;
   if (profileLoading) return <section className="pro-signup">{header}<p className="pro-signup-state" role="status">Cargando tu cuenta…</p></section>;
-  if (success) return <section className="pro-signup">{header}<div className="pro-signup-complete" role="status"><span>✓</span><h1>Perfil enviado para aprobación</h1><p>Tu perfil quedará pendiente de revisión antes de aparecer en las búsquedas.</p><Link className="pro-signup-primary" to="/mi-perfil-profesional">Ver mi perfil profesional</Link><Link className="pro-signup-secondary" to="/">Volver al inicio</Link></div></section>;
+  if (success) return <section className="pro-signup">{header}<div className="pro-signup-complete" role="status"><span>✓</span><h1>Perfil profesional creado</h1><p>Ahora agrega cada servicio que ofreces mientras tu perfil espera revisión.</p></div>
+    <section className="pro-signup-section pro-signup-services" aria-labelledby="signup-services-title"><h2 id="signup-services-title"><span>4</span>Tus servicios</h2>
+      {createdServices.length ? <div className="pro-signup-service-list">{createdServices.map(service => <article key={service.id}><div><strong>{service.title}</strong><small>{service.price_type === 'from' ? 'Desde ' : ''}{servicePrice(service)}</small></div><span aria-label="Servicio guardado">✓</span></article>)}</div> : <div className="pro-signup-service-empty"><AppIcon name="tools" size={28} /><strong>Añade tu primer servicio</strong><p>Explica qué haces, el precio de referencia, el tiempo, la garantía, los materiales y cada elemento incluido.</p></div>}
+      <button type="button" className="pro-signup-primary" onClick={() => setAddingService(true)}>{createdServices.length ? 'Agregar otro servicio' : 'Agregar servicio'}</button>
+    </section>
+    <div className="pro-signup-finish"><Link className="pro-signup-primary" to="/mi-perfil-profesional">Finalizar y ver mi perfil</Link><p>Tu perfil y tus servicios aparecerán públicamente cuando sean aprobados.</p></div>
+    {addingService && <ServiceEditor service={{}} onClose={() => setAddingService(false)} onSaved={service => { setCreatedServices(items => [service, ...items.filter(item => item.id !== service.id)]); setAddingService(false); }} />}
+  </section>;
   if (role === 'professional' || role === 'admin' || !role) return <section className="pro-signup">{header}<div className="pro-signup-state"><h1>{role === 'professional' ? 'Ya tienes un perfil profesional' : role === 'admin' ? 'Registro no disponible para administradores' : 'No pudimos verificar tu cuenta'}</h1><p>{role === 'professional' ? 'Consulta tus datos y el estado de aprobación desde tu perfil profesional.' : role === 'admin' ? 'Las cuentas de administrador no pueden registrar un perfil profesional.' : 'Vuelve a iniciar sesión para continuar.'}</p><Link className="pro-signup-primary" to={role === 'professional' ? '/mi-perfil-profesional' : role === 'admin' ? '/' : '/cuenta'}>{role === 'professional' ? 'Ir a mi perfil profesional' : role === 'admin' ? 'Volver al inicio' : 'Ir a mi cuenta'}</Link></div></section>;
   return <section className="pro-signup">{header}
     <div className="pro-signup-intro"><span className="pro-signup-icon"><AppIcon name="tools" size={31} /></span><h1>Haz visible tu habilidad</h1><p>Crea tu perfil para que los clientes conozcan tus servicios y puedan contactarte.</p><span className="pro-signup-note">Revisión antes de publicación</span></div>
@@ -91,7 +102,7 @@ export function RegisterProfessional() {
         <section className="pro-signup-section"><h2><span>3</span>Muestra tus trabajos</h2><p>Agrega hasta dos fotos de trabajos realizados. Es opcional. JPG, PNG o WebP, hasta 20 MB por foto.</p><div className="pro-signup-photos"><EvidenceField number={1} disabled={sending} /><EvidenceField number={2} disabled={sending} /></div></section>
       </fieldset>
       {msg && <div className="pro-signup-error" role="alert"><p>{msg}</p><Link to="/mi-perfil-profesional">Consultar mi perfil profesional</Link></div>}
-      <button type="submit" className="pro-signup-primary" disabled={sending || catalog !== 'ready' || !categories.length}>{sending ? 'Enviando perfil…' : 'Enviar para aprobación'}</button><Link className="pro-signup-secondary" to="/">Cancelar y volver al inicio</Link><p className="pro-signup-footer">Los campos con * son obligatorios. Tu perfil no se publicará hasta ser aprobado.</p>
+      <button type="submit" className="pro-signup-primary" disabled={sending || catalog !== 'ready' || !categories.length}>{sending ? 'Guardando perfil…' : 'Guardar perfil y agregar servicios'}</button><Link className="pro-signup-secondary" to="/">Cancelar y volver al inicio</Link><p className="pro-signup-footer">Los campos con * son obligatorios. Tu perfil no se publicará hasta ser aprobado.</p>
     </form>
   </section>;
 }

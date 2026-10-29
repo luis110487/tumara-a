@@ -1,5 +1,12 @@
 export function AppIcon({ name, size = 23, filled = false }) {
   const paths = {
+    share: <><path d="M12 15V2m-4 4 4-4 4 4M7 10H4v12h16V10h-3" /></>,
+    calendar: <><rect x="3" y="5" width="18" height="17" rx="2" /><path d="M7 2v6M17 2v6M3 11h18M8 15h2M14 15h2M8 18h2" /></>,
+    shield: <><path d="m12 2 9 4v6c0 6-9 10-9 10S3 18 3 12V6Z" /><path d="m8 12 3 3 5-6" /></>,
+    plus: <path d="M12 4v16M4 12h16" />,
+    filter: <><path d="M3 6h18M3 12h18M3 18h18M8 3v6M16 9v6M9 15v6" /></>,
+    locate: <><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2" /><path d="M12 1v4M12 19v4M1 12h4M19 12h4" /></>,
+    tag: <><path d="M3 3h9l9 9-9 9-9-9Z" /><circle cx="8" cy="8" r="1" fill="white" stroke="white" /></>,
     clipboard: <><rect x="5" y="4" width="14" height="18" rx="2" /><rect x="9" y="2" width="6" height="4" rx="1" /><path d="M9 11h6M9 15h6M9 19h4" /></>,
     star: <path d="m12 2 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z" />,
     card: <><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M2 10h20M6 15h3" /></>,

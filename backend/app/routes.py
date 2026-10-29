@@ -22,7 +22,7 @@ from .email_client import (
 main = Blueprint('main', __name__)
 
 PROFESSIONAL_FIELDS = 'id,display_name,city,neighborhood,description,experience_years,rating,total_reviews,verified,category_id,whatsapp,photo_url,evidence_url_1,evidence_url_2'
-REQUEST_FIELDS = 'id,professional_id,customer_id,service_title,description,city,address,preferred_date,status,created_at,updated_at'
+REQUEST_FIELDS = 'id,professional_id,customer_id,service_title,description,city,address,preferred_date,status,created_at,updated_at,service_id,service_snapshot'
 VALID_STATUSES = {'requested', 'in_conversation', 'quoted', 'accepted', 'in_progress', 'completed', 'cancelled'}
 PROFESSIONAL_STATUSES = {'pending', 'approved', 'rejected', 'suspended'}
 PROFESSIONAL_ACTIONS = {'approve': ('approved', True), 'reject': ('rejected', False), 'suspend': ('suspended', False)}
@@ -339,15 +339,24 @@ def api_requests_mine():
 def api_request_create():
     token, user = require_user()
     d = request.get_json(silent=True) or {}
+    if not isinstance(d,dict): return jsonify({'error':'Datos de solicitud inválidos'}),400
     try:
         professional_id = int(d.get('professional_id'))
     except (TypeError, ValueError):
         return jsonify({'error': 'professional_id inválido'}), 400
+    service_id=d.get('service_id')
+    if service_id is not None and (isinstance(service_id,bool) or not re.fullmatch(r'[1-9][0-9]{0,17}',str(service_id))):
+        return jsonify({'error':'Servicio inválido'}),400
+    service_id=int(service_id) if service_id is not None else None
     title = str(d.get('service_title', '')).strip()[:200]
     description = str(d.get('description', '')).strip()[:5000]
     if not title or not description:
         return jsonify({'error': 'Faltan campos obligatorios'}), 400
     try:
+        if service_id is not None:
+            selected=rest('professional_services',{'select':'id,title','id':f'eq.{service_id}','professional_id':f'eq.{professional_id}','is_active':'eq.true','limit':'1'},token=token)
+            if not selected: return jsonify({'error':'Servicio no disponible para ese profesional.'}),400
+            title=selected[0]['title']
         rows = rest('service_requests', method='POST', data={
             'customer_id': user['id'],
             'professional_id': professional_id,
@@ -356,7 +365,9 @@ def api_request_create():
             'city': str(d.get('city', '')).strip()[:100],
             'address': str(d.get('address', '')).strip()[:250],
             'preferred_date': d.get('preferred_date') or None,
+            **({'service_id':service_id} if service_id is not None else {}),
         }, token=token, prefer='return=representation')
+        title=rows[0]['service_title']
         customer_name = (user.get('user_metadata') or {}).get('full_name') or user.get('email', 'Un cliente')
         in_background(notify_new_request, rows[0]['id'], professional_id, customer_name, title, token, request.url_root)
         return jsonify(rows[0]), 201

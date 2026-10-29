@@ -25,6 +25,7 @@ public class MainActivity extends BridgeActivity {
     private OnboardingView onboarding;
     private OnBackPressedCallback onboardingBack;
     private boolean contentReady;
+    private boolean welcomeLoginRequested;
     private boolean polling;
     private boolean failed;
     private final Runnable timeout = () -> showRetry();
@@ -36,6 +37,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(DeviceNotificationsPlugin.class);
         super.onCreate(state);
         if (getBridge() == null) return;
+        welcomeLoginRequested = state != null && state.getBoolean("welcome_login_requested", false);
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override public void handleOnBackPressed() {
                 if (contentReady && onboarding == null && splash == null && getBridge() != null)
@@ -52,8 +54,11 @@ public class MainActivity extends BridgeActivity {
             brandTimeElapsed = true;
             advanceStartup();
         }, StartupTiming.remaining(android.os.SystemClock.elapsedRealtime(), splashDeadline)));
-        if (!getPreferences(MODE_PRIVATE).getBoolean("onboarding_complete_v1", false)) {
-            onboarding = new OnboardingView(this, state == null ? 0 : state.getInt("onboarding_page", 0), this::completeOnboarding);
+        if (!getPreferences(MODE_PRIVATE).getBoolean("onboarding_complete_v2", false)) {
+            onboarding = new OnboardingView(this, state == null ? 0 : state.getInt("onboarding_page", 0), this::completeOnboarding, () -> {
+                welcomeLoginRequested = true;
+                completeOnboarding();
+            });
             addContentView(onboarding, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             onboarding.setVisibility(View.INVISIBLE);
@@ -130,7 +135,7 @@ public class MainActivity extends BridgeActivity {
 
     private void completeOnboarding() {
         if (onboarding == null) return;
-        getPreferences(MODE_PRIVATE).edit().putBoolean("onboarding_complete_v1", true).apply();
+        getPreferences(MODE_PRIVATE).edit().putBoolean("onboarding_complete_v2", true).apply();
         ((ViewGroup) onboarding.getParent()).removeView(onboarding);
         onboarding = null;
         if (onboardingBack != null) onboardingBack.remove();
@@ -168,6 +173,10 @@ public class MainActivity extends BridgeActivity {
 
     private void notifyAppVisible() {
         if (isFinishing() || isDestroyed() || getBridge() == null) return;
+        if (welcomeLoginRequested) {
+            welcomeLoginRequested = false;
+            getBridge().getWebView().evaluateJavascript("if(location.pathname!=='/cuenta'){history.pushState({from:'/'},'', '/cuenta');window.dispatchEvent(new PopStateEvent('popstate'));}", null);
+        }
         getBridge().getWebView().evaluateJavascript("window.__tmAppVisible=true;window.dispatchEvent(new Event('tm:app-visible'));", null);
     }
 
@@ -180,6 +189,7 @@ public class MainActivity extends BridgeActivity {
 
     @Override public void onSaveInstanceState(Bundle state) {
         state.putLong("splash_deadline", splashDeadline);
+        state.putBoolean("welcome_login_requested", welcomeLoginRequested);
         if (onboarding != null) state.putInt("onboarding_page", onboarding.getPage());
         super.onSaveInstanceState(state);
     }

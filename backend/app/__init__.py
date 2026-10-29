@@ -33,4 +33,6 @@ def create_app():
 
     from .routes import main
     app.register_blueprint(main)
+    from .service_catalog import catalog
+    app.register_blueprint(catalog)
     return app

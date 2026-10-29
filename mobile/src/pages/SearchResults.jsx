@@ -1,3 +1,5 @@
+import '../search-refresh.css';
+import { ProfileModal } from '../components/ProfileModal';
 import { nearbyZones, municipalityDistance } from '../lib/nearbyZones';
 import { ProfessionalSearch } from '../components/ProfessionalSearch';
 import { useEffect, useState } from 'react';
@@ -5,7 +7,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { apiFetchPublic } from '../lib/apiClient';
 import { CitySelect } from '../components/CitySelect';
 import { AppIcon } from '../components/AppIcon';
-import { MobileProCard } from '../components/MobileProCard';
+import { SearchProCard } from '../components/SearchProCard';
 
 export function SearchResults() {
   const [params, setParams] = useSearchParams();
@@ -24,8 +26,8 @@ export function SearchResults() {
   const verified = params.get('verified') === '1';
   const minRating = ['4', '4.5'].includes(params.get('minRating')) ? params.get('minRating') : '';
   const sort = params.get('sort') || 'recommended';
-  const [draft, setDraft] = useState({ q, category, verified, minRating });
-  useEffect(() => { setDraft({ q, category, verified, minRating }); }, [q, category, verified, minRating]);
+  const [draft, setDraft] = useState({ q, category, verified, minRating, city, sort });
+  useEffect(() => { setDraft({ q, category, verified, minRating, city, sort }); }, [q, category, verified, minRating, city, sort]);
   useEffect(() => {
     apiFetchPublic('/api/categories').then(data => setCategories(Array.isArray(data) ? data : [])).catch(() => setCategories([]));
   }, []);
@@ -67,24 +69,37 @@ export function SearchResults() {
   if (sort === 'name') visible.sort((a, b) => (a.display_name || '').localeCompare(b.display_name || '', 'es'));
   const filtered = q || category || verified || minRating;
   const exitTo = /^(?:\/|\/(?:categorias|favoritos)(?:\?.*)?)$/.test(location.state?.from || '') ? location.state.from : '/';
-  const togglePanel = value => setPanel(panel === value ? '' : value);
-  return <section className="search-screen">
-    <header className="search-header"><button type="button" aria-label="Volver" onClick={() => navigate(exitTo, { replace: true })}><AppIcon name="back" /></button><h1>Resultados</h1></header>
-    <div className="search-location"><span><AppIcon name="pin" size={19} />{city || 'Todas las ciudades'}</span><button type="button" aria-expanded={panel === 'city'} aria-controls="search-city" onClick={() => togglePanel('city')}>Cambiar</button></div>
-    {panel === 'city' && <div id="search-city" className="search-panel"><label>¿Dónde necesitas el servicio?<CitySelect value={city} placeholder="Todas las ciudades" onChange={value => { update({ city: value }); try { localStorage.setItem('tm.home-city', value); } catch {} setPanel(''); }} /></label></div>}
-    <div className="search-tools">{[['filters', 'Filtros', 'tools'], ['sort', 'Ordenar', 'down'], ['map', 'Ver mapa', 'pin']].map(([key, label, icon]) => <button key={key} type="button" aria-expanded={panel === key} aria-controls={`search-${key}`} onClick={() => togglePanel(key)}><AppIcon name={icon} size={16} />{label}{key === 'filters' && filtered ? <i /> : null}</button>)}</div>
-    {panel === 'filters' && <form id="search-filters" className="search-panel" onSubmit={event => { event.preventDefault(); update({ q: draft.q.trim(), category: draft.category, verified: draft.verified ? '1' : '', minRating: draft.minRating }); setPanel(''); }}>
-      <label>Servicio o profesional<ProfessionalSearch value={draft.q} onChange={q => setDraft(current => ({ ...current, q }))} city={city} categories={categories} /></label>
-      <label>Categoría<select value={draft.category} onChange={event => setDraft({ ...draft, category: event.target.value })}><option value="">Todas las categorías</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-      <label>Calificación mínima<select value={draft.minRating} onChange={event => setDraft({ ...draft, minRating: event.target.value })}><option value="">Todas las calificaciones</option><option value="4">4 estrellas</option><option value="4.5">4.5 estrellas</option></select></label>
-      <label className="search-checkbox"><input type="checkbox" checked={draft.verified} onChange={event => setDraft({ ...draft, verified: event.target.checked })} />Solo profesionales verificados</label><button className="search-apply" type="submit">Aplicar filtros</button>
-    </form>}
-    {panel === 'sort' && <div id="search-sort" className="search-panel"><label>Ordenar por<select value={sort} onChange={event => { update({ sort: event.target.value === 'recommended' ? '' : event.target.value }); setPanel(''); }}><option value="recommended">Recomendados</option><option value="rating">Mejor calificados</option><option value="reviews">Más reseñas</option><option value="name">Nombre A–Z</option></select></label></div>}
-    {panel === 'map' && <div id="search-map" className="search-panel"><strong>Explora {city || 'tu zona'}</strong><p>La ubicación exacta se coordina con cada profesional.</p><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(city ? `${city}, Colombia` : 'Colombia')}`} target="_blank" rel="noreferrer">Abrir zona en Google Maps ↗</a></div>}
-    {filtered && <div className="search-applied"><span>{[q, categories.find(c => String(c.id) === category)?.name, verified && 'Verificados', minRating && `★ ${minRating}+`].filter(Boolean).join(' · ')}</span><button type="button" onClick={() => update({ q: '', category: '', verified: '', minRating: '' })}>Limpiar filtros</button></div>}
-    <div className="search-count" role="status" aria-live="polite">{loading ? 'Buscando profesionales…' : error ? '' : `${visible.length} ${visible.length === 1 ? 'profesional disponible' : 'profesionales disponibles'}`}</div>
+  const categoryName = categories.find(item => String(item.id) === category)?.name;
+  return <section className="search-screen search-refresh">
+    <header className="search-header">
+      <button type="button" aria-label="Volver" onClick={() => navigate(exitTo, { replace: true })}><AppIcon name="back" size={22} /></button>
+      <form className="results-query" role="search" onSubmit={event => { event.preventDefault(); update({ q: draft.q.trim() }); document.activeElement?.blur(); }}>
+        <ProfessionalSearch value={draft.q} onChange={q => setDraft(current => ({ ...current, q }))} city={city} categories={categories} professionals={professionals} placeholder={categoryName || 'Busca un servicio...'} />
+        <button type="submit" aria-label="Buscar profesionales"><AppIcon name="search" size={21} /></button>
+      </form>
+      <h1 className="home-sr-only">{categoryName || 'Resultados de búsqueda'}</h1>
+    </header>
+    <div className="results-filterbar">
+      <button type="button" className={!verified && !minRating && sort === 'recommended' ? 'is-selected' : ''} aria-pressed={!verified && !minRating && sort === 'recommended'} onClick={() => update({ verified: '', minRating: '', sort: '' })}>Todos</button>
+      <button type="button" aria-haspopup="dialog" onClick={() => setPanel('availability')}>Disponibles</button>
+      <button type="button" className={sort === 'rating' ? 'is-selected' : ''} aria-pressed={sort === 'rating'} onClick={() => update({ sort: sort === 'rating' ? '' : 'rating' })}>Mejor valorados</button>
+      <button type="button" className="results-filter-icon" aria-label="Filtros de búsqueda" aria-haspopup="dialog" onClick={() => setPanel('filters')}><AppIcon name="filter" size={19} />{(verified || minRating) && <i aria-label="Hay filtros activos" />}</button>
+    </div>
+    {(verified || minRating) && <div className="search-applied"><span>{[verified && 'Verificados', minRating && `★ ${minRating}+`].filter(Boolean).join(' · ')}</span><button type="button" onClick={() => update({ verified: '', minRating: '' })}>Limpiar filtros</button></div>}
+    <div className="search-count" role="status" aria-live="polite">{loading ? 'Buscando profesionales…' : error ? '' : `${visible.length} ${visible.length === 1 ? 'profesional encontrado' : 'profesionales encontrados'}${city ? ` · ${city}` : ''}`}</div>
+    {panel && <ProfileModal key={panel} title={panel === 'availability' ? 'Consulta disponibilidad' : 'Filtros de búsqueda'} onClose={() => setPanel(current => current === panel ? '' : current)}>
+      {panel === 'availability' ? <div className="results-availability"><p>La disponibilidad se confirma directamente con cada profesional. Abre su perfil para conversar o enviar una solicitud.</p><button type="button" className="search-apply" onClick={() => setPanel('')}>Ver profesionales</button></div> : <form id="search-filters" className="search-panel" onSubmit={event => { event.preventDefault(); update({ q: draft.q.trim(), city: draft.city, category: draft.category, verified: draft.verified ? '1' : '', minRating: draft.minRating, sort: draft.sort }); try { localStorage.setItem('tm.home-city', draft.city); } catch {} setPanel(''); }}>
+        <label>¿Dónde necesitas el servicio?<CitySelect value={draft.city} placeholder="Todas las ciudades" onChange={city => setDraft(current => ({ ...current, city }))} /></label>
+        <label>Categoría<select value={draft.category} onChange={event => setDraft(current => ({ ...current, category: event.target.value }))}><option value="">Todas las categorías</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+        <label>Calificación mínima<select value={draft.minRating} onChange={event => setDraft(current => ({ ...current, minRating: event.target.value }))}><option value="">Todas las calificaciones</option><option value="4">4 estrellas</option><option value="4.5">4.5 estrellas</option></select></label>
+        <label>Ordenar por<select value={draft.sort} onChange={event => setDraft(current => ({ ...current, sort: event.target.value }))}><option value="recommended">Recomendados</option><option value="rating">Mejor calificados</option><option value="reviews">Más reseñas</option><option value="name">Nombre A–Z</option></select></label>
+        <label className="search-checkbox"><input type="checkbox" checked={draft.verified} onChange={event => setDraft(current => ({ ...current, verified: event.target.checked }))} />Solo profesionales verificados</label>
+        <button className="search-apply" type="submit">Aplicar filtros</button>
+        {city && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${city}, Colombia`)}`} target="_blank" rel="noreferrer">Ver zona en Google Maps ↗</a>}
+      </form>}
+    </ProfileModal>}
     <div className="search-list" aria-busy={loading}>
-      {loading ? <div className="search-loading">{[1, 2, 3, 4].map(n => <div key={n}><span /><div><i /><i /><i /></div></div>)}</div> : error ? <div className="search-empty" role="alert"><h2>No pudimos cargar los profesionales</h2><p>Revisa tu conexión e inténtalo de nuevo.</p><button type="button" className="search-apply" onClick={() => setRetry(value => value + 1)}>Reintentar</button></div> : visible.length ? visible.map(p => <MobileProCard key={p.id} professional={p} backTo={location.pathname + location.search} />) : <div className="search-empty"><AppIcon name="search" size={32} /><h2>No encontramos resultados</h2><p>Prueba otra categoría, ciudad o término de búsqueda.</p>{filtered && <button className="search-apply" type="button" onClick={() => update({ q: '', category: '', verified: '', minRating: '' })}>Quitar filtros</button>}</div>}
+      {loading ? <div className="search-loading">{[1, 2, 3, 4].map(n => <div key={n}><span /><div><i /><i /><i /></div></div>)}</div> : error ? <div className="search-empty" role="alert"><h2>No pudimos cargar los profesionales</h2><p>Revisa tu conexión e inténtalo de nuevo.</p><button type="button" className="search-apply" onClick={() => setRetry(value => value + 1)}>Reintentar</button></div> : visible.length ? visible.map(p => <SearchProCard key={p.id} professional={p} backTo={location.pathname + location.search} />) : <div className="search-empty"><AppIcon name="search" size={32} /><h2>No encontramos resultados</h2><p>Prueba otra categoría, ciudad o término de búsqueda.</p>{filtered && <button className="search-apply" type="button" onClick={() => update({ q: '', category: '', verified: '', minRating: '' })}>Quitar filtros</button>}</div>}
     </div>
     {!loading && !error && !visible.length && city && <section className="nearby-zones" aria-label="Recomendaciones de zonas">
       {nearby.state === 'unlocated' && <p>No pudimos calcular la cercanía de esta ubicación. Elige otro municipio para consultar disponibilidad.</p>}

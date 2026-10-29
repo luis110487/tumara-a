@@ -1,0 +1,28 @@
+/* Category grid follows the reference without introducing catalog records. */
+.categories-app-shell{padding-bottom:0;background:#fff}
+.mobile-categories.categories-refresh{min-height:100dvh;background:linear-gradient(145deg,#fff,#fbfdff);padding-bottom:env(safe-area-inset-bottom)}
+.categories-refresh .categories-header{padding:12px 12px 5px;background:#ffffffed;backdrop-filter:blur(12px)}
+.categories-refresh .categories-titlebar{gap:4px;min-height:48px}
+.categories-refresh .categories-titlebar h1{font-size:20px;font-weight:750;letter-spacing:-.5px}
+.categories-refresh .categories-icon-button{width:44px;min-height:44px}
+.categories-refresh .categories-search{margin:8px 4px 7px;background:#f3f7fc;border:1px solid #e2eaf4;border-radius:14px}
+.categories-refresh .categories-city{margin:0 8px 6px;font-size:11px;color:#627b98}
+.categories-refresh .categories-content{padding:8px 12px 24px}
+.categories-refresh .categories-list,.categories-refresh .categories-loading{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px 9px;list-style:none;margin:0;padding:0}
+.categories-refresh .categories-list>li{min-width:0;display:flex}
+.categories-refresh .category-row{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;width:100%;min-height:137px;gap:4px;padding:10px 3px 9px;border:0;border-radius:12px;box-shadow:none;transition:transform .15s ease}
+.categories-refresh .category-row:hover{filter:brightness(.98)}
+.categories-refresh .category-row:active{transform:scale(.97)}
+.categories-refresh .category-row-icon{display:grid;place-items:center;width:100%;height:61px;flex:none;background:transparent;border-radius:0}
+.categories-refresh .category-row-icon>svg{width:58px;height:58px;filter:drop-shadow(0 3px 2px #17355612)}
+.categories-refresh .category-summary{display:flex;flex-direction:column;gap:3px;align-items:center;text-align:center;flex:none;width:100%;min-width:0}
+.categories-refresh .category-summary strong{font-size:11px;line-height:1.15;font-weight:650;overflow-wrap:anywhere;max-width:100%}
+.categories-refresh .category-summary>span{display:block;font-size:9px;line-height:1.2;color:#61728b;overflow:visible;overflow-wrap:anywhere}
+.categories-refresh .categories-loading>div{height:137px;border-radius:12px;background:#f0f5fa;display:flex;flex-direction:column;align-items:center;padding:12px}
+.categories-refresh .categories-loading>div>span{width:48px;height:48px;border-radius:8px;background:#e4edf5}
+.categories-refresh .categories-loading>div>i{width:75%;height:8px;background:#e4edf5;margin-top:12px;border-radius:3px}
+@media(max-width:350px){.categories-refresh .categories-header{padding-inline:7px}.categories-refresh .categories-content{padding-inline:10px}.categories-refresh .categories-list,.categories-refresh .categories-loading{gap:13px 7px}.categories-refresh .category-row{min-height:129px;padding:7px 3px}.categories-refresh .category-row-icon{height:53px}.categories-refresh .category-row-icon>svg{width:51px;height:51px}.categories-refresh .category-summary strong{font-size:10px}.categories-refresh .category-summary>span{font-size:8px}}
+@media(min-width:480px){.categories-refresh .category-row{min-height:151px;padding:14px 6px}.categories-refresh .category-row-icon{height:67px}.categories-refresh .category-row-icon>svg{width:64px;height:64px}.categories-refresh .category-summary strong{font-size:13px}.categories-refresh .category-summary>span{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.categories-refresh .category-row{transition:none}}
+
+.categories-refresh .category-summary .category-long-name{font-size:clamp(7.5px,2.3vw,10px);overflow-wrap:normal}

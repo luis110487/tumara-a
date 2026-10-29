@@ -8,6 +8,8 @@ export function Layout() {
   if (pathname === '/cuenta' || pathname === '/restablecer-contrasena') {
     return <main className="auth-layout"><Outlet /></main>;
   }
+  if (pathname === '/categorias') return <div className="mobile-app-shell categories-app-shell"><main><Outlet /></main></div>;
+  if (pathname === '/mis-servicios' || /^\/servicio\/[^/]+$/.test(pathname)) return <div className="mobile-app-shell service-app-shell"><main><Outlet /></main></div>;
   const home = ['/', '/favoritos', '/categorias', '/mi-perfil', '/mis-solicitudes'].includes(pathname);
   if (pathname === '/mi-perfil-profesional') return <div className="mobile-app-shell own-pro-shell"><main><Outlet /></main></div>;
   if (pathname === '/registrar') return <div className="mobile-app-shell pro-signup-shell"><main><Outlet /></main></div>;

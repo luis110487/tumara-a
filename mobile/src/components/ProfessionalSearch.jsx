@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from 'react';
 import { apiFetchPublic } from '../lib/apiClient';
 import { searchText } from '../lib/searchText';
 
-export function ProfessionalSearch({ value, onChange, city, categories = [], professionals = [], maxLength = 100 }) {
+export function ProfessionalSearch({ value, onChange, city, categories = [], professionals = [], maxLength = 100, placeholder = "Nombre u ocupación del marañero" }) {
   const id = useId();
   const [matches, setMatches] = useState([]), [focused, setFocused] = useState(false), [dismissed, setDismissed] = useState(false), [active, setActive] = useState(-1);
   const needle = searchText(value);
@@ -26,7 +26,7 @@ export function ProfessionalSearch({ value, onChange, city, categories = [], pro
   const visible = options.slice(0, 6), open = focused && !dismissed && visible.length > 0;
   const choose = text => { onChange(text); setDismissed(true); setActive(-1); };
   return <div className="professional-search" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) { setFocused(false); setActive(-1); } }}>
-    <input name="q" value={value} onChange={event => { onChange(event.target.value); if (document.activeElement === event.target) setFocused(true); setDismissed(false); setActive(-1); }} onFocus={() => setFocused(true)} placeholder="Nombre u ocupación del marañero" maxLength={maxLength} enterKeyHint="search" autoComplete="off" role="combobox" aria-label="Nombre u ocupación del marañero" aria-autocomplete="list" aria-expanded={open} aria-controls={open ? id : undefined} aria-activedescendant={open && active >= 0 ? `${id}-${active}` : undefined} onKeyDown={event => {
+    <input name="q" value={value} onChange={event => { onChange(event.target.value); if (document.activeElement === event.target) setFocused(true); setDismissed(false); setActive(-1); }} onFocus={() => setFocused(true)} placeholder={placeholder} maxLength={maxLength} enterKeyHint="search" autoComplete="off" role="combobox" aria-label="Nombre u ocupación del marañero" aria-autocomplete="list" aria-expanded={open} aria-controls={open ? id : undefined} aria-activedescendant={open && active >= 0 ? `${id}-${active}` : undefined} onKeyDown={event => {
       if (event.key === 'Escape') { event.preventDefault(); setDismissed(true); }
       if (open && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) { event.preventDefault(); setActive(index => event.key === 'ArrowDown' ? (index + 1) % visible.length : (index <= 0 ? visible.length - 1 : index - 1)); }
       if (open && event.key === 'Enter' && active >= 0) { event.preventDefault(); choose(visible[active].text); }

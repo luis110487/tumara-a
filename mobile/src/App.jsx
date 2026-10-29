@@ -1,3 +1,5 @@
+import { ServiceDetail } from './pages/ServiceDetail';
+import { MyServices } from './pages/MyServices';
 import { PushLifecycle } from './components/PushNotifications';
 import { AndroidBack } from './components/AndroidBack';
 import { Routes, Route } from 'react-router-dom';
@@ -31,6 +33,8 @@ export default function App() {
     <><AndroidBack /><PushLifecycle /><Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
+        <Route path="/servicio/:id" element={<ServiceDetail />} />
+        <Route path="/mis-servicios" element={<ProtectedRoute><MyServices /></ProtectedRoute>} />
         <Route path="/favoritos" element={<Favorites />} />
         <Route path="/categorias" element={<Categories />} />
         <Route path="/buscar" element={<SearchResults />} />

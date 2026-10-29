@@ -47,8 +47,8 @@ export function BottomNav() {
   return <nav ref={navRef} className={`mobile-bottom-nav${hidden ? ' is-scroll-hidden' : ''}`} aria-label="Navegación principal" aria-hidden={hidden || undefined} onFocus={() => setHidden(false)}>
     {[
       ['/', 'home', 'Inicio'], ['/categorias', 'grid', 'Categorías'],
-      ['/favoritos', 'heart', 'Favoritos'], ['/mis-solicitudes', 'chat', 'Mensajes'], ['/mi-perfil', 'user', 'Perfil'],
-    ].map(([to, icon, label]) => <NavLink key={to} to={to} end={to === '/'}>
+      ['/registrar', 'plus', 'Publicar'], ['/mis-solicitudes', 'chat', 'Mensajes'], ['/mi-perfil', 'user', 'Perfil'],
+    ].map(([to, icon, label]) => <NavLink key={to} to={to} className={({ isActive }) => `${isActive ? "active " : ""}${to === "/registrar" ? "nav-publish" : ""}`} end={to === '/'}>
       {({ isActive }) => <><AppIcon name={icon} size={22} filled={isActive && icon === 'home'} /><span>{label}</span></>}
     </NavLink>)}
   </nav>;
