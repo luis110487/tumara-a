@@ -1,0 +1,16 @@
+/* Amarillo institucional del logo TuMaraña. */
+.request-progress .is-current b,
+.request-progress .is-complete b,
+.request-card > header > b,
+.request-submit {
+  background: #ffa800;
+  color: #092653;
+}
+
+.request-progress .is-current {
+  color: #a86400;
+}
+
+.request-intro-art {
+  color: #ffa800;
+}

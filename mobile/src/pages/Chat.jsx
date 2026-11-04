@@ -14,6 +14,10 @@ function dateLabel(value, timeOnly = false) {
   if (!value || !Number.isFinite(date.getTime())) return '';
   return date.toLocaleString('es-CO', timeOnly ? { hour: '2-digit', minute: '2-digit' } : { day: 'numeric', month: 'short', year: 'numeric' });
 }
+const NEXT_STATUS = {
+  customer: { requested: ['cancelled'], in_conversation: ['cancelled'], quoted: ['accepted', 'cancelled'], accepted: ['cancelled'], in_progress: ['cancelled'] },
+  professional: { requested: ['in_conversation', 'cancelled'], in_conversation: ['quoted', 'cancelled'], quoted: ['cancelled'], accepted: ['in_progress', 'cancelled'], in_progress: ['completed', 'cancelled'] },
+};
 export function Chat() {
   const { id } = useParams();
   const location = useLocation();
@@ -38,6 +42,7 @@ export function Chat() {
   const sendLock = useRef(false), reviewLock = useRef(false), statusLock = useRef(false);
   const active = useRef(false), sequence = useRef(0);
   const accepted = searchParams.get('aceptada') === '1';
+  const reviewRequested = searchParams.get('review') === '1';
   const linkError = searchParams.get('error');
   const loadChat = useCallback(async () => {
     const request = ++sequence.current;
@@ -53,14 +58,14 @@ export function Chat() {
   }, [id, navigate]);
   useEffect(() => {
     active.current = true; nearBottom.current = true;
-    setData(null); setLoading(true); setBody(''); setMsg(''); setReviewMsg({ text: '', ok: false }); setDetailsOpen(false);
+    setData(null); setLoading(true); setBody(''); setMsg(''); setReviewMsg({ text: '', ok: false }); setDetailsOpen(reviewRequested);
     loadChat();
     const channel = supabase.channel('request-' + id)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `request_id=eq.${id}` }, loadChat).subscribe();
     const refresh = () => { if (document.visibilityState === 'visible') loadChat(); };
     window.addEventListener('focus', refresh); document.addEventListener('visibilitychange', refresh);
     return () => { active.current = false; sequence.current++; supabase.removeChannel(channel); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
-  }, [id, loadChat]);
+  }, [id, loadChat, reviewRequested]);
   useEffect(() => {
     const container = messagesRef.current;
     if (container && nearBottom.current) container.scrollTop = container.scrollHeight;
@@ -100,11 +105,12 @@ export function Chat() {
   }
   const messages = Array.isArray(data?.messages) ? data.messages : [];
   const name = data?.is_customer ? data.professional?.display_name || 'Profesional' : 'Cliente';
+  const allowedStatuses = data ? new Set([data.status, ...(NEXT_STATUS[data.is_customer ? 'customer' : 'professional'][data.status] || [])]) : new Set();
   return <section className="mobile-chat">
     <header className="mobile-chat-header"><Link to={backTo} state={backTo === '/mi-perfil' ? { panel: location.state?.returnPanel } : undefined} aria-label={backTo === '/mi-perfil' ? 'Volver a mi perfil' : 'Volver a mis solicitudes'}><AppIcon name="back" /></Link>{data ? <div className="mobile-chat-person"><span className="mobile-chat-avatar">{name[0]}</span><div><strong>{name}</strong><small><i />{data.status === 'completed' || data.status === 'cancelled' ? 'Conversación' : 'Solicitud activa'}</small></div></div> : <h1>Mensajes</h1>}<button className="mobile-chat-call" type="button" aria-label="Llamar al contacto" disabled={!data || !data.professional?.whatsapp}><AppIcon name="phone" size={19} /></button><button type="button" aria-label="Ver detalles de la solicitud" disabled={!data} onClick={() => setDetailsOpen(value => !value)}><AppIcon name="dots" /></button></header>
     {(accepted || linkError) && <div className="mobile-chat-notice" role="status"><span>{accepted ? '¡Solicitud aceptada! Ya puedes coordinar los detalles.' : linkError}</span><button onClick={() => { const next = new URLSearchParams(searchParams); next.delete('aceptada'); next.delete('error'); setSearchParams(next, { replace: true }); }}>Cerrar</button></div>}
     {msg && <div className="mobile-chat-error" role="alert"><span>{msg}</span><button type="button" onClick={loadChat}>Actualizar</button></div>}
-    {data && <details ref={detailsRef} className="mobile-chat-details" hidden={!detailsOpen} open={detailsOpen} onToggle={event => setDetailsOpen(event.currentTarget.open)}><summary><span>Detalles de la solicitud</span><StatusBadge status={data.status} /></summary><div className="mobile-chat-detail-body"><h2>{data.service_title}</h2><p>{data.description}</p>{data.city && <p><b>Ciudad:</b> {data.city}</p>}{data.address && <p><b>Dirección:</b> {data.address}</p>}{data.preferred_date && <p><b>Fecha preferida:</b> {dateLabel(data.preferred_date)} · {dateLabel(data.preferred_date, true)}</p>}{data.service_snapshot && <details className="chat-service-snapshot"><summary>Condiciones del servicio al solicitarlo</summary><ServiceConditions service={data.service_snapshot} snapshot /><p>Estas condiciones corresponden al momento de la solicitud.</p></details>}<label>Estado de la solicitud<select value={data.status} disabled={changing} onChange={changeStatus}>{STATUS_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><Link to={`/profesional/${data.professional_id}`}>Ver perfil del profesional</Link>
+    {data && <details ref={detailsRef} className="mobile-chat-details" hidden={!detailsOpen} open={detailsOpen} onToggle={event => setDetailsOpen(event.currentTarget.open)}><summary><span>Detalles de la solicitud</span><StatusBadge status={data.status} /></summary><div className="mobile-chat-detail-body"><h2>{data.service_title}</h2><p>{data.description}</p>{data.city && <p><b>Ciudad:</b> {data.city}</p>}{data.address && <p><b>Dirección:</b> {data.address}</p>}{data.preferred_date && <p><b>Fecha preferida:</b> {dateLabel(data.preferred_date)} · {dateLabel(data.preferred_date, true)}</p>}{data.service_snapshot && <details className="chat-service-snapshot"><summary>Condiciones del servicio al solicitarlo</summary><ServiceConditions service={data.service_snapshot} snapshot /><p>Estas condiciones corresponden al momento de la solicitud.</p></details>}{allowedStatuses.size > 1 && <label>Estado de la solicitud<select value={data.status} disabled={changing} onChange={changeStatus}>{STATUS_OPTIONS.filter(([value]) => allowedStatuses.has(value)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>}<Link to={`/profesional/${data.professional_id}`}>Ver perfil del profesional</Link>
       {data.status === 'completed' && data.is_customer && <div className="mobile-chat-review"><h2>{data.review ? 'Tu calificación' : 'Califica este servicio'}</h2>{data.review ? <><span className="mobile-chat-stars">{'★'.repeat(Math.max(0, Math.min(5, Number(data.review.rating) || 0)))}</span><p>{data.review.comment}</p></> : <form onSubmit={handleReview}><label>Calificación<select value={rating} onChange={event => setRating(Number(event.target.value))}>{[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} estrellas</option>)}</select></label><label>Comentario (opcional)<textarea value={comment} onChange={event => setComment(event.target.value)} rows={3} maxLength={2000} /></label><button type="submit" disabled={reviewing || reviewMsg.ok}>{reviewing ? 'Enviando…' : 'Enviar calificación'}</button></form>}{reviewMsg.text && <p role={reviewMsg.ok ? 'status' : 'alert'}>{reviewMsg.text}</p>}</div>}
     </div></details>}
     <div className="mobile-chat-messages" ref={messagesRef} role="log" aria-label="Conversación" aria-live="polite" onScroll={event => { const el = event.currentTarget; nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }}>

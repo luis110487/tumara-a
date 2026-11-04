@@ -40,6 +40,7 @@ create table if not exists public.professionals (
   rating numeric(3,2) not null default 0 check (rating between 0 and 5),
   total_reviews integer not null default 0 check (total_reviews >= 0),
   verified boolean not null default false,
+  profile_color text check (profile_color in ('blue','green','orange','purple')),
   status public.professional_status not null default 'pending',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

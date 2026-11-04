@@ -29,10 +29,15 @@ export function BottomNav() {
       if (distance >= 12) { setHidden(direction > 0); distance = 0; }
     };
     const scroll = () => { if (!frame) frame = requestAnimationFrame(update); };
+    const setExternalVisibility = event => {
+      distance = 0;
+      setHidden(Boolean(event.detail?.hidden));
+    };
     window.addEventListener('scroll', scroll, { passive: true });
+    window.addEventListener('tm:bottom-nav-visibility', setExternalVisibility);
     document.addEventListener('focusin', focus);
     document.addEventListener('focusout', focus);
-    return () => { window.removeEventListener('scroll', scroll); document.removeEventListener('focusin', focus); document.removeEventListener('focusout', focus); cancelAnimationFrame(frame); cancelAnimationFrame(focusFrame); };
+    return () => { window.removeEventListener('scroll', scroll); window.removeEventListener('tm:bottom-nav-visibility', setExternalVisibility); document.removeEventListener('focusin', focus); document.removeEventListener('focusout', focus); cancelAnimationFrame(frame); cancelAnimationFrame(focusFrame); };
   }, [location.pathname, location.search]);
   useEffect(() => { if (navRef.current) navRef.current.inert = hidden; }, [hidden]);
   useLayoutEffect(() => {

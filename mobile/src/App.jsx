@@ -27,6 +27,7 @@ import { AdminRequests } from './pages/admin/AdminRequests';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminBanners } from './pages/admin/AdminBanners';
 import { AdminTexts } from './pages/admin/AdminTexts';
+import { Notifications } from './pages/Notifications';
 
 export default function App() {
   return (
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/solicitar/:id" element={<ProtectedRoute><RequestService /></ProtectedRoute>} />
         <Route path="/solicitud/:id/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
         <Route path="/mis-solicitudes" element={<ProtectedRoute><MyRequests /></ProtectedRoute>} />
+        <Route path="/notificaciones" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
           <Route index element={<AdminProfessionals />} />
           <Route path="profesionales" element={<AdminProfessionals />} />

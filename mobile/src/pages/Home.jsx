@@ -4,7 +4,7 @@ import { ProfileModal } from '../components/ProfileModal';
 import { BannerAd } from '../components/BannerAd';
 import { ProfessionalSearch } from '../components/ProfessionalSearch';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { apiFetchPublic } from '../lib/apiClient';
 import { CitySelect } from '../components/CitySelect';
 import { AppIcon } from '../components/AppIcon';
@@ -12,6 +12,18 @@ import { MobileProCard } from '../components/MobileProCard';
 import { useAuth } from '../context/AuthContext';
 import { readSelectedCity } from '../lib/selectedCity';
 import { useDeviceCity } from '../lib/useDeviceCity';
+
+function FeaturedCrown() {
+  return <svg viewBox="0 0 64 64" role="img" aria-label="Destacados">
+    <path className="crown-spark crown-spark-left" d="M6 18 2 14M9 11 8 5" />
+    <path className="crown-spark crown-spark-right" d="m58 18 4-4M55 11l1-6" />
+    <path className="crown-body" d="M12 22 24 33 32 13l8 20 12-11-4 25H16Z" />
+    <circle className="crown-tip" cx="12" cy="22" r="3" />
+    <circle className="crown-tip" cx="32" cy="13" r="3" />
+    <circle className="crown-tip" cx="52" cy="22" r="3" />
+    <path className="crown-base" d="M17 52h30" />
+  </svg>;
+}
 
 export function Home() {
   const [categories, setCategories] = useState([]);
@@ -24,11 +36,20 @@ export function Home() {
   const [panel, setPanel] = useState('');
   const [verified, setVerified] = useState(false);
   const nearbyRequested = useRef(false);
+  const featuredScrollTop = useRef(0);
   const [city, setCity] = useState(readSelectedCity);
   const { session, role, profile } = useAuth();
   const firstName = (profile?.full_name || session?.user?.user_metadata?.full_name || "").trim().split(/\s+/)[0];
   const navigate = useNavigate();
+  const location = useLocation();
   const gps = useDeviceCity(updateCity);
+
+  useEffect(() => {
+    const requested = location.state?.openPanel;
+    if (!['urgent', 'offers'].includes(requested)) return;
+    setPanel(requested);
+    navigate(location.pathname + location.search, { replace: true, state: {} });
+  }, [location.pathname, location.search, location.state, navigate]);
 
   useEffect(() => {
     let active = true;
@@ -38,7 +59,7 @@ export function Home() {
       if (!Array.isArray(data)) throw new Error('Invalid categories response');
       setCategories(data); setCategoryState('ready');
     }).catch(() => { if (active) setCategoryState('error'); });
-    apiFetchPublic('/api/professionals?limit=8').then(data => {
+    apiFetchPublic('/api/professionals').then(data => {
       if (!active) return;
       if (!Array.isArray(data)) throw new Error('Invalid professionals response');
       setProfessionals(data); setProfessionalState('ready');
@@ -46,6 +67,10 @@ export function Home() {
     apiFetchPublic('/api/site-texts').then(data => { if (active && data) setTexts(data); }).catch(() => {});
     return () => { active = false; };
   }, [attempt]);
+
+  useEffect(() => () => {
+    window.dispatchEvent(new CustomEvent('tm:bottom-nav-visibility', { detail: { hidden: false } }));
+  }, []);
 
   function updateCity(value) {
     setCity(value);
@@ -67,6 +92,16 @@ export function Home() {
     return `/buscar${params.size ? `?${params}` : ''}`;
   }
   function retry() { setAttempt(value => value + 1); }
+  function handleFeaturedScroll(event) {
+    const current = event.currentTarget.scrollTop;
+    const delta = current - featuredScrollTop.current;
+    if (current <= 2 || delta < -2) {
+      window.dispatchEvent(new CustomEvent('tm:bottom-nav-visibility', { detail: { hidden: false } }));
+    } else if (delta > 2) {
+      window.dispatchEvent(new CustomEvent('tm:bottom-nav-visibility', { detail: { hidden: true } }));
+    }
+    featuredScrollTop.current = current;
+  }
 
   return <div className="home-mobile home-refresh">
     <section className="home-hero" aria-label="Encuentra servicios en tu ciudad">
@@ -74,7 +109,7 @@ export function Home() {
         <Link className="home-wordmark home-transparent-brand" to="/" aria-label="TuMaraña, inicio"><img src="/brand-logo-transparent.png" alt="TuMaraña.com" /></Link>
         <div className="home-toolbar-actions">
           {!session && <Link className="home-login" to="/cuenta">Ingresar</Link>}
-          <Link to="/mis-solicitudes" className="home-activity" aria-label="Ver actividad de mis solicitudes"><AppIcon name="bell" /></Link>
+          <Link to="/notificaciones" className="home-activity" aria-label="Ver notificaciones"><AppIcon name="bell" /></Link>
         </div>
       </header>
       <div className="home-hero-copy">
@@ -92,33 +127,19 @@ export function Home() {
     </form>
 
     <nav className="home-shortcuts" aria-label="Encuentra un profesional">
-      <button type="button" onClick={() => setPanel('urgent')} className="home-shortcut shortcut-red"><span><AppIcon name="bolt" size={26} filled /></span><strong>Urgentes</strong></button>
-      <Link to={results(null, { sort: 'rating' })} state={{ from: '/' }} className="home-shortcut shortcut-blue"><span><AppIcon name="star" size={26} filled /></span><strong>Mejores<br />valorados</strong></Link>
-      <button type="button" onClick={() => { nearbyRequested.current = true; setPanel('nearby'); gps.request(); }} className="home-shortcut shortcut-green"><span><AppIcon name="locate" size={26} /></span><strong>Cerca de mí</strong></button>
-      <button type="button" onClick={() => setPanel('offers')} className="home-shortcut shortcut-purple"><span><AppIcon name="tag" size={26} filled /></span><strong>Ofertas</strong></button>
+      <button type="button" onClick={() => setPanel('urgent')} className="home-shortcut shortcut-red"><span><AppIcon name="bolt" size={20} filled /></span><strong>Urgentes</strong></button>
+      <Link to={results(null, { sort: 'rating' })} state={{ from: '/' }} className="home-shortcut shortcut-blue"><span><AppIcon name="star" size={20} filled /></span><strong>Mejores<br />valorados</strong></Link>
+      <button type="button" onClick={() => { nearbyRequested.current = true; setPanel('nearby'); gps.request(); }} className="home-shortcut shortcut-green"><span><AppIcon name="locate" size={20} /></span><strong>Cerca de mí</strong></button>
+      <button type="button" onClick={() => setPanel('offers')} className="home-shortcut shortcut-purple"><span><AppIcon name="tag" size={20} filled /></span><strong>Ofertas</strong></button>
     </nav>
 
     <BannerAd homeFeature />
 
-    <section className="home-section" id="categorias" aria-labelledby="home-categories-title">
-      <div className="home-section-heading"><h2 id="home-categories-title">{texts.home_categories_title || 'Categorías populares'}</h2><Link to={`/categorias${city ? `?${new URLSearchParams({ city })}` : ''}`}>Ver todas</Link></div>
-      {categoryState === 'loading' && <div role="status" className="home-categories-loading"><span className="home-sr-only">Cargando categorías…</span>{Array.from({ length: 4 }, (_, i) => <span key={i} aria-hidden="true" />)}</div>}
-      {categoryState === 'error' && <div className="home-inline-message" role="alert"><p>No pudimos cargar las categorías.</p><button type="button" onClick={retry}>Volver a intentar</button></div>}
-      {categoryState === 'ready' && (categories.length ? <div className="home-category-grid">
-        {categories.slice(0, 4).map(category => {
-          const visual = categoryVisual(category.name);
-          return <Link className="home-category" style={{ background: visual.background }} key={category.id} to={results(category.id)} state={{ from: '/' }}>
-            <span className="home-category-icon"><CategoryArtwork name={category.name} /></span><span>{category.name}</span>
-          </Link>;
-        })}
-      </div> : <p className="home-inline-message">Aún no hay categorías disponibles.</p>)}
-    </section>
-
     <section className="home-section home-featured" aria-labelledby="home-featured-title">
-      <div className="home-section-heading"><h2 id="home-featured-title">{texts.home_professionals_title || 'Profesionales destacados'}</h2><Link to={results()} state={{ from: '/' }}>Ver todos</Link></div>
+      <div className="home-featured-heading"><span className="home-featured-crown"><FeaturedCrown /></span><span><h2 id="home-featured-title">Marañeros destacados</h2><small>Profesionales verificados y recomendados</small></span><Link to={results()} state={{ from: '/' }}>Ver todos <b aria-hidden="true">›</b></Link></div>
       {professionalState === 'loading' && <p className="home-inline-message" role="status">Buscando profesionales…</p>}
       {professionalState === 'error' && <div className="home-inline-message" role="alert"><p>No pudimos cargar los profesionales. Revisa tu conexión.</p><button type="button" onClick={retry}>Volver a intentar</button></div>}
-      {professionalState === 'ready' && (professionals.length ? <div className="home-pro-list" role="region" aria-label="Marañeros destacados, desliza para ver más" tabIndex={0} onKeyDown={event => { if (event.target !== event.currentTarget || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return; event.preventDefault(); event.currentTarget.scrollBy({ left: (event.key === 'ArrowRight' ? 1 : -1) * event.currentTarget.clientWidth * .9, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }}>{professionals.map(p => <MobileProCard key={p.id} professional={p} />)}</div>
+      {professionalState === 'ready' && (professionals.length ? <div className="home-pro-list" role="region" aria-label={`Marañeros destacados, ${professionals.length} profesionales disponibles. Desliza para verlos todos`} tabIndex={0} onScroll={handleFeaturedScroll}>{professionals.map((p, index) => <MobileProCard key={p.id} professional={p} tone={index} />)}</div>
         : <p className="home-inline-message">Pronto encontrarás profesionales aquí. Mientras tanto, prueba buscar por servicio.</p>)}
     </section>
     {panel && <ProfileModal title={panel === 'filters' ? 'Ubicación y filtros' : panel === 'urgent' ? '¿Necesitas ayuda pronto?' : panel === 'nearby' ? 'Profesionales cerca de ti' : 'Ofertas'} onClose={() => { nearbyRequested.current = false; setPanel(''); }}>

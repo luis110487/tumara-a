@@ -8,6 +8,13 @@ export function AndroidBack() {
     const back = () => {
       const viewer = document.querySelector('dialog[data-photo-viewer][open],dialog[data-profile-modal][open]');
       if (viewer) { if (viewer.dataset.closeBlocked !== 'true') viewer.close(); return; }
+      // La cuenta puede conservar `from` de una ruta protegida (por ejemplo,
+      // Mensajes). Volver a esa ruta sin sesión crea un bucle cuenta → login.
+      // En Android, el botón físico debe devolver al usuario al Home.
+      if (location.pathname === '/cuenta') {
+        navigate('/', { replace: true });
+        return;
+      }
       const origin = location.state?.from;
       const target = /^\/(?:mi-perfil|mi-perfil-profesional|mis-solicitudes|mis-servicios|servicio\/\d+|profesional\/\d+|favoritos|categorias|buscar)(?:\?.*)?$/.test(origin || '') && origin !== location.pathname + location.search ? origin : location.pathname === '/mi-perfil-profesional' ? '/mi-perfil' : '/';
       const resultsOrigin = /^(?:\/|\/(?:categorias|favoritos)(?:\?.*)?)$/.test(location.state?.resultsFrom || '') ? location.state.resultsFrom : '/';

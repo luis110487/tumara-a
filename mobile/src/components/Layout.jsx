@@ -12,6 +12,7 @@ export function Layout() {
   if (pathname === '/mis-servicios' || /^\/servicio\/[^/]+$/.test(pathname)) return <div className="mobile-app-shell service-app-shell"><main><Outlet /></main></div>;
   const home = ['/', '/favoritos', '/categorias', '/mi-perfil', '/mis-solicitudes'].includes(pathname);
   if (pathname === '/mi-perfil-profesional') return <div className="mobile-app-shell own-pro-shell"><main><Outlet /></main></div>;
+  if (pathname === '/notificaciones') return <div className="mobile-app-shell notifications-app-shell"><main><Outlet /></main></div>;
   if (pathname === '/registrar') return <div className="mobile-app-shell pro-signup-shell"><main><Outlet /></main></div>;
   if (/^\/solicitud\/[^/]+\/chat$/.test(pathname)) return <div className="mobile-app-shell chat-app-shell"><main><Outlet /></main></div>;
   if (/^\/solicitar\/[^/]+$/.test(pathname)) return <div className="mobile-app-shell request-app-shell"><main><Outlet /></main></div>;

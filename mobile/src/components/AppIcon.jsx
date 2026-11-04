@@ -40,6 +40,8 @@ export function AppIcon({ name, size = 23, filled = false }) {
     water: <><path d="M3 11h18v6h-5v5h-5v-5H3ZM7 7h11M13 3v8" /></>,
     leaf: <><path d="M21 3C6 1 1 8 4 16c8 6 17-1 17-13ZM3 22 17 8" /></>,
     tools: <><path d="M14 6a6 6 0 0 0-7 8l-5 5 3 3 5-5a6 6 0 0 0 8-7l-4 4-4-4Z" /></>,
+    hammer: <><path d="m14 4 6 6M17 2l5 5-3 3-5-5ZM15 9 5 21l-3-3L14 8" /></>,
+    monitor: <><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{paths[name] || paths.tools}</svg>;
 }
@@ -57,4 +59,20 @@ export function categoryAppearance(name = '') {
   if (/plom|fontan/.test(value)) return ['water', '#0781d7', '#eaf5fe'];
   if (/jardin/.test(value)) return ['leaf', '#138645', '#edf8ee'];
   return ['tools', '#164678', '#edf3fa'];
+}
+
+export function professionalToolIcon(name = '') {
+  const value = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (/informatic|comput|tecnolog|sistema|software|redes/.test(value)) return 'monitor';
+  if (/mecan|vehic|autom|moto/.test(value)) return 'tools';
+  if (/carpin|mueble|ebanist/.test(value)) return 'hammer';
+  if (/aire|clima|refriger/.test(value)) return 'snow';
+  if (/electri/.test(value)) return 'bolt';
+  if (/pint/.test(value)) return 'roller';
+  if (/plom|fontan/.test(value)) return 'water';
+  if (/jardin/.test(value)) return 'leaf';
+  if (/limpi|aseo/.test(value)) return 'broom';
+  if (/cerraj/.test(value)) return 'key';
+  if (/alban|constru/.test(value)) return 'bricks';
+  return 'tools';
 }

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../../lib/apiClient';
 import { StatusBadge, PROFESSIONAL_STATUS_LABELS, PROFESSIONAL_STATUS_CLASSES } from '../../components/StatusBadge';
+import { PROFILE_COLORS, profileColor } from '../../lib/profileColors';
+import '../../admin-profile-palette.css';
 
 const STATUS_FILTERS = [
   ['pending', 'Pendientes'],
@@ -15,11 +17,16 @@ export function AdminProfessionals() {
   const [pros, setPros] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [colors, setColors] = useState({});
+  const [saving, setSaving] = useState(null);
 
   function load() {
     setLoading(true);
     apiFetch(`/api/admin/professionals?status=${status}`)
-      .then(setPros)
+      .then(data => {
+        setPros(data);
+        setColors(current => Object.fromEntries(data.map(p => [p.id, current[p.id] || profileColor(p.profile_color, p.id)])));
+      })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }
@@ -28,12 +35,24 @@ export function AdminProfessionals() {
 
   async function act(id, action) {
     setError('');
+    setSaving(id);
     try {
-      await apiFetch(`/api/admin/professionals/${id}/${action}`, { method: 'POST' });
+      await apiFetch(`/api/admin/professionals/${id}/${action}`, { method: 'POST', body: JSON.stringify({ profile_color: colors[id] }) });
       load();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setSaving(null);
     }
+  }
+
+  async function saveColor(id) {
+    setError(''); setSaving(id);
+    try {
+      const saved = await apiFetch(`/api/admin/professionals/${id}/color`, { method: 'PATCH', body: JSON.stringify({ profile_color: colors[id] }) });
+      setPros(items => items.map(item => item.id === id ? { ...item, profile_color: saved.profile_color } : item));
+    } catch (err) { setError(err.message); }
+    finally { setSaving(null); }
   }
 
   return (
@@ -54,10 +73,11 @@ export function AdminProfessionals() {
                 <p>{p.category} · {p.city}{p.neighborhood ? ` · ${p.neighborhood}` : ''}</p>
               </div>
               <StatusBadge status={p.status} labels={PROFESSIONAL_STATUS_LABELS} classes={PROFESSIONAL_STATUS_CLASSES} />
+              <fieldset className="admin-profile-palette"><legend>Color del perfil</legend><div role="radiogroup" aria-label={`Color del perfil de ${p.display_name}`}>{PROFILE_COLORS.map(color => <button key={color.value} type="button" role="radio" aria-checked={colors[p.id] === color.value} aria-label={color.label} title={color.label} style={{ '--palette-start': color.start, '--palette-end': color.end }} onClick={() => setColors(current => ({ ...current, [p.id]: color.value }))}><span /></button>)}</div><button type="button" className="btn outline" disabled={saving === p.id || colors[p.id] === p.profile_color} onClick={() => saveColor(p.id)}>{saving === p.id ? 'Guardando…' : 'Guardar color'}</button></fieldset>
               <div className="admin-row-actions">
-                {p.status !== 'approved' && <button className="btn primary" onClick={() => act(p.id, 'approve')}>Aprobar</button>}
-                {p.status !== 'rejected' && <button className="btn outline" onClick={() => act(p.id, 'reject')}>Rechazar</button>}
-                {p.status !== 'suspended' && <button className="btn outline" onClick={() => act(p.id, 'suspend')}>Suspender</button>}
+                {p.status !== 'approved' && <button className="btn primary" disabled={saving === p.id} onClick={() => act(p.id, 'approve')}>Aprobar</button>}
+                {p.status !== 'rejected' && <button className="btn outline" disabled={saving === p.id} onClick={() => act(p.id, 'reject')}>Rechazar</button>}
+                {p.status !== 'suspended' && <button className="btn outline" disabled={saving === p.id} onClick={() => act(p.id, 'suspend')}>Suspender</button>}
               </div>
             </article>
           ))}

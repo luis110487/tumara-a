@@ -2,6 +2,7 @@ import re
 import secrets
 import string
 import threading
+from datetime import datetime, timezone
 from urllib.parse import quote
 
 from flask import Blueprint, request, jsonify, abort, redirect, current_app
@@ -21,11 +22,12 @@ from .email_client import (
 
 main = Blueprint('main', __name__)
 
-PROFESSIONAL_FIELDS = 'id,display_name,city,neighborhood,description,experience_years,rating,total_reviews,verified,category_id,whatsapp,photo_url,evidence_url_1,evidence_url_2'
-REQUEST_FIELDS = 'id,professional_id,customer_id,service_title,description,city,address,preferred_date,status,created_at,updated_at,service_id,service_snapshot,photo_urls'
+PROFESSIONAL_FIELDS = 'id,display_name,city,neighborhood,description,experience_years,rating,total_reviews,verified,category_id,whatsapp,photo_url,evidence_url_1,evidence_url_2,profile_color'
+REQUEST_FIELDS = 'id,professional_id,customer_id,service_title,description,city,address,preferred_date,status,created_at,updated_at,service_id,service_snapshot,photo_urls,completed_at,status_changed_by'
 VALID_STATUSES = {'requested', 'in_conversation', 'quoted', 'accepted', 'in_progress', 'completed', 'cancelled'}
 PROFESSIONAL_STATUSES = {'pending', 'approved', 'rejected', 'suspended'}
 PROFESSIONAL_ACTIONS = {'approve': ('approved', True), 'reject': ('rejected', False), 'suspend': ('suspended', False)}
+PROFILE_COLORS = {'blue', 'green', 'orange', 'purple'}
 
 
 def bearer():
@@ -333,11 +335,15 @@ def api_requests_mine():
         professional_ids = sorted({int(row['professional_id']) for row in [*as_customer, *as_professional] if row.get('professional_id') is not None})
         professionals = rest('professionals', {'select': 'id,display_name,photo_url', 'id': f'in.({",".join(map(str, professional_ids))})'}, token=token) if professional_ids else []
         professional_map = {int(row['id']): row for row in professionals}
+        request_ids = sorted({int(row['id']) for row in [*as_customer, *as_professional] if row.get('id') is not None})
+        reviews = rest('reviews', {'select': 'request_id,rating,comment,created_at', 'request_id': f'in.({",".join(map(str, request_ids))})'}, token=token) if request_ids else []
+        review_map = {int(row['request_id']): row for row in reviews}
         for row in [*as_customer, *as_professional]:
             pro = professional_map.get(int(row['professional_id']))
             if pro:
                 row['professional_name'] = pro.get('display_name')
                 row['professional_photo_url'] = pro.get('photo_url')
+            row['review'] = review_map.get(int(row['id']))
         return jsonify({'as_customer': as_customer, 'as_professional': as_professional})
     except SupabaseError as e:
         return api_error(e)
@@ -407,7 +413,7 @@ def api_request_get(request_id):
         # Cuando el profesional abre una solicitud nueva, pasa a "En conversación".
         if req['status'] == 'requested' and pros[0]['user_id'] == user['id']:
             try:
-                updated = rest('service_requests', {'id': f'eq.{request_id}', 'select': REQUEST_FIELDS}, method='PATCH', data={'status': 'in_conversation'}, token=token, prefer='return=representation')
+                updated = rest('service_requests', {'id': f'eq.{request_id}', 'select': REQUEST_FIELDS}, method='PATCH', data={'status': 'in_conversation', 'status_changed_by': user['id']}, token=token, prefer='return=representation')
                 if updated:
                     req = updated[0]
                     in_background(notify_status_change, request_id, req, user['id'], 'in_conversation', token)
@@ -466,13 +472,82 @@ def api_request_status(request_id):
     status = d.get('status')
     if status not in VALID_STATUSES:
         return jsonify({'error': 'Estado inválido'}), 400
+    transitions = {
+        'requested': {'in_conversation', 'cancelled'},
+        'in_conversation': {'quoted', 'cancelled'},
+        'quoted': {'accepted', 'cancelled'},
+        'accepted': {'in_progress', 'cancelled'},
+        'in_progress': {'completed', 'cancelled'},
+        'completed': set(), 'cancelled': set(),
+    }
     try:
-        rows = rest('service_requests', {'id': f'eq.{request_id}'}, method='PATCH', data={'status': status}, token=token, prefer='return=representation')
+        current_rows = rest('service_requests', {'select': REQUEST_FIELDS, 'id': f'eq.{request_id}', 'limit': '1'}, token=token)
+        if not current_rows:
+            return jsonify({'error': 'Solicitud no encontrada'}), 404
+        current = current_rows[0]
+        pros = rest('professionals', {'select': 'user_id', 'id': f'eq.{current["professional_id"]}', 'limit': '1'}, token=token)
+        pro_user = pros[0].get('user_id') if pros else None
+        is_customer, is_professional = current['customer_id'] == user['id'], pro_user == user['id']
+        if not (is_customer or is_professional):
+            return jsonify({'error': 'No autorizado'}), 403
+        if status == current['status']:
+            return jsonify(current)
+        if status not in transitions.get(current['status'], set()):
+            return jsonify({'error': 'Ese cambio de estado no está permitido'}), 409
+        customer_actions = {'accepted', 'cancelled'}
+        professional_actions = {'in_conversation', 'quoted', 'in_progress', 'completed', 'cancelled'}
+        if (is_customer and status not in customer_actions) or (is_professional and status not in professional_actions):
+            return jsonify({'error': 'Tu cuenta no puede realizar ese cambio de estado'}), 403
+        update = {'status': status, 'status_changed_by': user['id']}
+        if status == 'completed':
+            update['completed_at'] = datetime.now(timezone.utc).isoformat()
+        rows = rest('service_requests', {'id': f'eq.{request_id}'}, method='PATCH', data=update, token=token, prefer='return=representation')
         if not rows:
             return jsonify({'error': 'No autorizado o solicitud inexistente'}), 404
         req = rows[0]
         in_background(notify_status_change, request_id, req, user['id'], status, token)
         return jsonify(req)
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.get('/api/notifications')
+def api_notifications():
+    token, user = require_user()
+    try:
+        rows = rest('user_notifications', {'select': 'id,event_type,title,body,path:target_path,request_id,professional_id,read_at,created_at', 'recipient_id': f'eq.{user["id"]}', 'order': 'created_at.desc', 'limit': '50'}, token=token)
+        return jsonify(rows)
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.get('/api/notifications/unread-count')
+def api_notifications_unread_count():
+    token, user = require_user()
+    try:
+        _, total = rest('user_notifications', {'select': 'id', 'recipient_id': f'eq.{user["id"]}', 'read_at': 'is.null'}, token=token, with_count=True)
+        return jsonify({'count': total or 0})
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.patch('/api/notifications/<int:notification_id>/read')
+def api_notification_read(notification_id):
+    token, user = require_user()
+    try:
+        rows = rest('user_notifications', {'id': f'eq.{notification_id}', 'recipient_id': f'eq.{user["id"]}'}, method='PATCH', data={'read_at': datetime.now(timezone.utc).isoformat()}, token=token, prefer='return=representation')
+        if not rows: return jsonify({'error': 'Notificación no encontrada'}), 404
+        return jsonify(rows[0])
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.post('/api/notifications/read-all')
+def api_notifications_read_all():
+    token, user = require_user()
+    try:
+        rest('user_notifications', {'recipient_id': f'eq.{user["id"]}', 'read_at': 'is.null'}, method='PATCH', data={'read_at': datetime.now(timezone.utc).isoformat()}, token=token)
+        return jsonify({'ok': True})
     except SupabaseError as e:
         return api_error(e)
 
@@ -618,8 +693,15 @@ def admin_set_professional_status(professional_id, action):
     if action not in PROFESSIONAL_ACTIONS:
         return jsonify({'error': 'Acción inválida'}), 400
     status, verified = PROFESSIONAL_ACTIONS[action]
+    data = request.get_json(silent=True) or {}
+    profile_color = str(data.get('profile_color') or '').strip().lower()
+    if profile_color and profile_color not in PROFILE_COLORS:
+        return jsonify({'error': 'Color de perfil inválido'}), 400
     try:
-        rows = rest('professionals', {'id': f'eq.{professional_id}'}, method='PATCH', data={'status': status, 'verified': verified}, token=token, prefer='return=representation')
+        updates = {'status': status, 'verified': verified}
+        if profile_color:
+            updates['profile_color'] = profile_color
+        rows = rest('professionals', {'id': f'eq.{professional_id}'}, method='PATCH', data=updates, token=token, prefer='return=representation')
         if not rows:
             return jsonify({'error': 'Profesional no encontrado'}), 404
         pro = rows[0]
@@ -635,6 +717,22 @@ def admin_set_professional_status(professional_id, action):
             except SupabaseError:
                 pass
         return jsonify(pro)
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.patch('/api/admin/professionals/<int:professional_id>/color')
+def admin_set_professional_color(professional_id):
+    token, _ = require_admin()
+    data = request.get_json(silent=True) or {}
+    profile_color = str(data.get('profile_color') or '').strip().lower()
+    if profile_color not in PROFILE_COLORS:
+        return jsonify({'error': 'Color de perfil inválido'}), 400
+    try:
+        rows = rest('professionals', {'id': f'eq.{professional_id}'}, method='PATCH', data={'profile_color': profile_color}, token=token, prefer='return=representation')
+        if not rows:
+            return jsonify({'error': 'Profesional no encontrado'}), 404
+        return jsonify(rows[0])
     except SupabaseError as e:
         return api_error(e)
 

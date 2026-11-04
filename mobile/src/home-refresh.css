@@ -24,8 +24,8 @@
 .home-refresh .home-gps-action{font-size:11px;min-height:36px}
 .home-refresh .home-gps-controls p{font-size:11px;margin-bottom:2px}
 .home-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:8px 16px 0}
-.home-shortcut{display:flex;flex-direction:column;align-items:center;gap:5px;min-height:91px;padding:9px 3px;border-radius:13px;text-decoration:none;text-align:center}
-.home-shortcut>span{display:grid;place-items:center;width:35px;height:35px;border-radius:11px}
+.home-shortcut{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:76px;padding:7px 3px;border-radius:12px;text-decoration:none;text-align:center}
+.home-shortcut>span{display:grid;place-items:center;width:29px;height:29px;border-radius:9px}
 .home-shortcut strong{font-size:10px;line-height:1.3;color:var(--home-ink);font-weight:600}
 .shortcut-blue{background:#edf5ff;color:#0762e8}.shortcut-blue>span{background:#deedff}
 .shortcut-green{background:#edfaf2;color:#148647}.shortcut-green>span{background:#d9f5e4}
@@ -65,7 +65,7 @@
 .home-search-submit,.home-filter-button{display:grid;place-items:center;min-width:44px;height:44px;border:0;border-radius:50%;background:transparent;color:#092653;cursor:pointer;flex:none}
 .home-filter-button{background:#f0f5fc;align-self:center}
 .home-mobile.home-refresh .home-shortcuts{padding:14px 14px 0;gap:8px}
-.home-mobile.home-refresh .home-shortcut{border:0;cursor:pointer;min-height:88px;font:inherit;padding:9px 2px 8px;border-radius:12px;gap:6px}
+.home-mobile.home-refresh .home-shortcut{border:0;cursor:pointer;min-height:74px;font:inherit;padding:7px 2px 6px;border-radius:11px;gap:4px}
 .home-mobile.home-refresh .home-shortcut strong{font-size:10px;font-weight:600}
 .shortcut-red{background:#fff0ee;color:#f44135}.shortcut-red>span{background:#ffe3de}
 .home-panel-content{display:flex;flex-direction:column;gap:12px;padding-bottom:16px}

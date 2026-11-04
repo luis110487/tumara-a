@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { CitySelect } from '../components/CitySelect';
 import { AppIcon } from '../components/AppIcon';
 
-const MENU = [['/mis-solicitudes', 'clipboard', 'Mis solicitudes'], ['/favoritos', 'heart', 'Mis favoritos'], ['address', 'pin', 'Direcciones'], ['payments', 'card', 'Métodos de pago'], ['notifications', 'bell', 'Notificaciones'], ['help', 'help', 'Soporte'], ['settings', 'settings', 'Configuración']];
+const MENU = [['/mis-solicitudes', 'clipboard', 'Mis solicitudes'], ['/favoritos', 'heart', 'Mis favoritos'], ['address', 'pin', 'Direcciones'], ['payments', 'card', 'Métodos de pago'], ['/notificaciones', 'bell', 'Notificaciones'], ['help', 'help', 'Soporte'], ['settings', 'settings', 'Configuración']];
 export function MyProfile() {
   const { user, signOut, isAdmin, role } = useAuth();
   const [profile, setProfile] = useState(null);
