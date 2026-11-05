@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { pushStatus, enablePush, consumePushPath, openPushSettings, subscribePush, setPushUser, platformName } from '../lib/pushNotifications';
 import { safePushPath } from '../lib/pushRoutes';
+import { apiFetch } from '../lib/apiClient';
 
 export function PushLifecycle() {
   const { user, profileLoading } = useAuth(), navigate = useNavigate();
@@ -56,5 +57,11 @@ export function PushSettings() {
     catch (error) { setMessage(pushError(error)); }
     finally { setBusy(false); }
   }
-  return <div className="push-settings"><p>{!state ? 'Comprobando avisos…' : !state.supported ? 'Este dispositivo o navegador no permite recibir estos avisos.' : !state.configured || !state.backendReady ? 'Los avisos todavía no están disponibles. Podrás activarlos cuando termine la configuración del servicio.' : state.registered ? 'Este dispositivo está registrado para recibir solicitudes, mensajes y cambios de estado.' : 'Activa los avisos para enterarte de solicitudes, mensajes y cambios de estado.'}</p>{state?.supported && state.configured && state.backendReady && <button type="button" className="account-primary btn primary" disabled={busy} onClick={activate}>{busy ? 'Activando…' : state.registered ? 'Actualizar registro' : 'Activar notificaciones'}</button>}{platformName === 'android' && state?.configured && <button type="button" className="account-panel-link btn outline" onClick={openPushSettings}>Abrir ajustes del móvil</button>}{platformName === 'web' && state?.denied && <p>En el navegador, abre los permisos de este sitio y permite las notificaciones.</p>}<button type="button" className="account-panel-link btn outline" disabled={busy} onClick={refresh}>Comprobar de nuevo</button>{message && <p role="status">{message}</p>}</div>;
+  async function testPush() {
+    if (busy) return; setBusy(true); setMessage('');
+    try { await apiFetch('/api/push/test', { method: 'POST' }); setMessage('Prueba enviada. Puede tardar unos segundos en llegar.'); }
+    catch (error) { setMessage(error.message || 'No pudimos enviar la prueba.'); }
+    finally { setBusy(false); }
+  }
+  return <div className="push-settings"><p>{!state ? 'Comprobando avisos…' : !state.supported ? 'Este dispositivo o navegador no permite recibir estos avisos.' : !state.configured || !state.backendReady ? 'Los avisos todavía no están disponibles. Podrás activarlos cuando termine la configuración del servicio.' : state.registered ? 'Este dispositivo está registrado para recibir solicitudes, mensajes y cambios de estado.' : 'Activa los avisos para enterarte de solicitudes, mensajes y cambios de estado.'}</p>{state?.supported && state.configured && state.backendReady && <button type="button" className="account-primary btn primary" disabled={busy} onClick={activate}>{busy ? 'Procesando…' : state.registered ? 'Actualizar registro' : 'Activar notificaciones'}</button>}{state?.registered && <button type="button" className="account-primary btn primary" disabled={busy} onClick={testPush}>Enviar notificación de prueba</button>}{platformName === 'android' && state?.configured && <button type="button" className="account-panel-link btn outline" onClick={openPushSettings}>Abrir ajustes del móvil</button>}{platformName === 'web' && state?.denied && <p>En el navegador, abre los permisos de este sitio y permite las notificaciones.</p>}<button type="button" className="account-panel-link btn outline" disabled={busy} onClick={refresh}>Comprobar de nuevo</button>{message && <p role="status">{message}</p>}</div>;
 }

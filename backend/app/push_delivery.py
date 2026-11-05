@@ -102,3 +102,20 @@ def queue_due_reminders():
     response=requests.post(url+'/rest/v1/rpc/queue_due_service_reminders',headers=headers,json={},timeout=15)
     response.raise_for_status()
     return int(response.json() or 0)
+
+
+def enqueue_test_notification(recipient_id, dedupe_key):
+    """Queue a self-test through the same durable notification pipeline."""
+    url,headers=admin_headers()
+    payload={
+        'p_recipient':recipient_id,
+        'p_type':'push_test',
+        'p_title':'Notificaciones activas',
+        'p_body':'Tu dispositivo está listo para recibir avisos de TuMaraña.',
+        'p_path':'/notificaciones',
+        'p_dedupe':dedupe_key,
+        'p_request':None,
+        'p_professional':None,
+    }
+    response=requests.post(url+'/rest/v1/rpc/enqueue_user_notification',headers=headers,json=payload,timeout=15)
+    response.raise_for_status()

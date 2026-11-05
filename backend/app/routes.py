@@ -1124,3 +1124,20 @@ def api_push_status():
         return jsonify({'ready':True,'registered':bool(installation and devices)})
     except SupabaseError:
         return jsonify({'ready':False,'registered':False})
+
+
+@main.post('/api/push/test')
+def api_push_test():
+    from .push_delivery import configured, enqueue_test_notification
+    _, user = require_user()
+    if not configured():
+        return jsonify({'error':'El servicio de notificaciones todavía no está configurado.'}),503
+    try:
+        devices=rest_admin('push_devices',{'select':'installation_id','user_id':f'eq.{user["id"]}','enabled':'eq.true','limit':'1'})
+        if not devices:
+            return jsonify({'error':'Activa las notificaciones en este dispositivo antes de hacer la prueba.'}),409
+        window=int(datetime.now(timezone.utc).timestamp()//300)
+        enqueue_test_notification(user['id'],f'push_test:{user["id"]}:{window}')
+        return jsonify({'queued':True}),202
+    except Exception:
+        return jsonify({'error':'No pudimos programar la notificación de prueba.'}),503
