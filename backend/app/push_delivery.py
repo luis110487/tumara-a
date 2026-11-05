@@ -94,3 +94,11 @@ def dispatch_pending(limit=25):
             # Only this lease owner can update the event; no credentials or recipient data are logged.
             rest_admin('push_outbox',lease,method='PATCH',data={'status':'failed' if event['attempts']>=10 else 'pending','available_at':(dt.datetime.now(dt.timezone.utc)+dt.timedelta(seconds=delay)).isoformat(),'last_error':type(error).__name__})
     return {'configured':True,'sent':sent,'failed':failed}
+
+
+def queue_due_reminders():
+    """Ask Postgres to enqueue due reminders; dedupe is enforced by the database."""
+    url,headers=admin_headers()
+    response=requests.post(url+'/rest/v1/rpc/queue_due_service_reminders',headers=headers,json={},timeout=15)
+    response.raise_for_status()
+    return int(response.json() or 0)
