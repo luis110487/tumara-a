@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { apiFetch } from '../lib/apiClient';
 import { AppIcon } from '../components/AppIcon';
 import { safePushPath } from '../lib/pushRoutes';
+import { notifyNotificationCountChanged } from '../components/NotificationBell';
 
 function relativeDate(value) {
   const date = new Date(value), seconds = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
@@ -22,13 +23,14 @@ export function Notifications() {
   async function open(item) {
     if (!item.read_at) {
       setItems(current => current.map(value => value.id === item.id ? { ...value, read_at: new Date().toISOString() } : value));
+      notifyNotificationCountChanged();
       apiFetch(`/api/notifications/${item.id}/read`, { method: 'PATCH' }).catch(() => {});
     }
     const path = safePushPath(item.path);
     if (path) navigate(path);
   }
   async function readAll() {
-    try { await apiFetch('/api/notifications/read-all', { method: 'POST' }); setItems(current => current.map(item => ({ ...item, read_at: item.read_at || new Date().toISOString() }))); }
+    try { await apiFetch('/api/notifications/read-all', { method: 'POST' }); setItems(current => current.map(item => ({ ...item, read_at: item.read_at || new Date().toISOString() }))); notifyNotificationCountChanged(); }
     catch { setMessage('No pudimos marcar las notificaciones.'); }
   }
   const unread = items.filter(item => !item.read_at).length;

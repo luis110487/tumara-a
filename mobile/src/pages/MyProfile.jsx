@@ -8,6 +8,7 @@ import { uploadPhoto as storePhoto, savePhotoUrl, photoError, MAX_PHOTO_BYTES } 
 import { useAuth } from '../context/AuthContext';
 import { CitySelect } from '../components/CitySelect';
 import { AppIcon } from '../components/AppIcon';
+import { useUnreadNotificationCount } from '../components/NotificationBell';
 
 const MENU = [['/mis-solicitudes', 'clipboard', 'Mis solicitudes'], ['/favoritos', 'heart', 'Mis favoritos'], ['address', 'pin', 'Direcciones'], ['payments', 'card', 'Métodos de pago'], ['/notificaciones', 'bell', 'Notificaciones'], ['help', 'help', 'Soporte'], ['settings', 'settings', 'Configuración']];
 export function MyProfile() {
@@ -30,6 +31,7 @@ export function MyProfile() {
   const saveLock = useRef(false), photoLock = useRef(false), exitLock = useRef(false);
   const [photoRetry, setPhotoRetry] = useState(null);
   const navigate = useNavigate();
+  const unreadNotifications = useUnreadNotificationCount();
   useEffect(() => {
     let active = true;
     setLoading(true); setError('');
@@ -102,7 +104,7 @@ export function MyProfile() {
     </div>
     {!panel && msg.text && <p className={`account-feedback ${msg.ok ? 'is-success' : ''}`} role={msg.ok ? 'status' : 'alert'}>{msg.text}</p>}
     {!panel && photoRetry && <button type="button" className="account-primary" disabled={uploading || saving} onClick={() => uploadPhoto({ target: photoRetry })}>Reintentar foto</button>}
-    <nav className="account-options" aria-label="Opciones de mi perfil">{MENU.map(([key, icon, label]) => key.startsWith('/') ? <Link className="account-option" key={key} to={key} state={{ from: '/mi-perfil' }}><AppIcon name={icon} size={22} /><span>{label}</span><span className="account-chevron">›</span></Link> : <button className="account-option" type="button" key={key} aria-expanded={panel === key} aria-controls="account-panel" onClick={() => openPanel(key)}><AppIcon name={icon} size={22} /><span>{label}</span><span className="account-chevron">›</span></button>)}
+    <nav className="account-options" aria-label="Opciones de mi perfil">{MENU.map(([key, icon, label]) => key.startsWith('/') ? <Link className="account-option" key={key} to={key} state={{ from: '/mi-perfil' }}><AppIcon name={icon} size={22} /><span>{label}</span>{key === '/notificaciones' && unreadNotifications > 0 && <b className="account-notification-count" aria-label={`${unreadNotifications} notificaciones sin leer`}>{unreadNotifications > 99 ? '99+' : unreadNotifications}</b>}<span className="account-chevron">›</span></Link> : <button className="account-option" type="button" key={key} aria-expanded={panel === key} aria-controls="account-panel" onClick={() => openPanel(key)}><AppIcon name={icon} size={22} /><span>{label}</span><span className="account-chevron">›</span></button>)}
       {(role === 'professional' || isAdmin) && <Link className="account-option" to="/mi-perfil-profesional" state={{ from: '/mi-perfil' }}><AppIcon name="tools" size={22} /><span>Mi perfil profesional</span><span className="account-chevron">›</span></Link>}
       {isAdmin && <Link className="account-option" to="/admin" state={{ from: '/mi-perfil' }}><AppIcon name="grid" size={22} /><span>Administración</span><span className="account-chevron">›</span></Link>}
       <button type="button" className="account-option account-logout" onClick={logout} disabled={leaving || saving || uploading}><AppIcon name="logout" size={22} /><span>{leaving ? 'Cerrando sesión…' : 'Cerrar sesión'}</span></button>

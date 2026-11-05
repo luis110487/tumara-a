@@ -8,6 +8,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { apiFetchPublic } from '../lib/apiClient';
 import { CitySelect } from '../components/CitySelect';
 import { AppIcon } from '../components/AppIcon';
+import { NotificationBell } from '../components/NotificationBell';
 import { MobileProCard } from '../components/MobileProCard';
 import { useAuth } from '../context/AuthContext';
 import { readSelectedCity } from '../lib/selectedCity';
@@ -109,7 +110,7 @@ export function Home() {
         <Link className="home-wordmark home-transparent-brand" to="/" aria-label="TuMaraña, inicio"><img src="/brand-logo-transparent.png" alt="TuMaraña.com" /></Link>
         <div className="home-toolbar-actions">
           {!session && <Link className="home-login" to="/cuenta">Ingresar</Link>}
-          <Link to="/notificaciones" className="home-activity" aria-label="Ver notificaciones"><AppIcon name="bell" /></Link>
+          <NotificationBell className="home-activity" />
         </div>
       </header>
       <div className="home-hero-copy">
