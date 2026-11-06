@@ -49,8 +49,8 @@ function pushError(error) {
 }
 export function PushSettings() {
   const [state, setState] = useState(null), [message, setMessage] = useState(''), [busy, setBusy] = useState(false);
-  async function refresh() { try { setState(await pushStatus()); } catch { setMessage('No pudimos consultar los avisos. Vuelve a intentarlo.'); } }
-  useEffect(() => { let active = true; pushStatus().then(value => { if (active) setState(value); }).catch(() => { if (active) setMessage('No pudimos consultar los avisos.'); }); return () => { active = false; }; }, []);
+  async function refresh() { setMessage(''); const value = await pushStatus(); setState(value); if (value.statusError) setMessage(pushStatusError(value.statusError)); }
+  useEffect(() => { let active = true; pushStatus().then(value => { if (active) { setState(value); if (value.statusError) setMessage(pushStatusError(value.statusError)); } }); return () => { active = false; }; }, []);
   async function activate() {
     if (busy) return; setBusy(true); setMessage('');
     try { await enablePush(); await refresh(); setMessage('Este dispositivo quedó registrado para recibir avisos.'); }
@@ -64,4 +64,9 @@ export function PushSettings() {
     finally { setBusy(false); }
   }
   return <div className="push-settings"><p>{!state ? 'Comprobando avisos…' : !state.supported ? 'Este dispositivo o navegador no permite recibir estos avisos.' : !state.configured || !state.backendReady ? 'Los avisos todavía no están disponibles. Podrás activarlos cuando termine la configuración del servicio.' : state.registered ? 'Este dispositivo está registrado para recibir solicitudes, mensajes y cambios de estado.' : 'Activa los avisos para enterarte de solicitudes, mensajes y cambios de estado.'}</p>{state?.supported && state.configured && state.backendReady && <button type="button" className="account-primary btn primary" disabled={busy} onClick={activate}>{busy ? 'Procesando…' : state.registered ? 'Actualizar registro' : 'Activar notificaciones'}</button>}{state?.registered && <button type="button" className="account-primary btn primary" disabled={busy} onClick={testPush}>Enviar notificación de prueba</button>}{platformName === 'android' && state?.configured && <button type="button" className="account-panel-link btn outline" onClick={openPushSettings}>Abrir ajustes del móvil</button>}{platformName === 'web' && state?.denied && <p>En el navegador, abre los permisos de este sitio y permite las notificaciones.</p>}<button type="button" className="account-panel-link btn outline" disabled={busy} onClick={refresh}>Comprobar de nuevo</button>{message && <p role="status">{message}</p>}</div>;
+}
+function pushStatusError(value) {
+  if (value === 'device') return 'Esta instalación no pudo abrir el servicio de notificaciones. Actualiza la APK.';
+  if (value === 'backend') return 'El servidor rechazó la consulta de notificaciones. Revisa el despliegue de Render.';
+  return 'No pudimos conectar con el servicio de notificaciones. Revisa internet y vuelve a intentarlo.';
 }

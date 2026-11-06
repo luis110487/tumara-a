@@ -20,7 +20,10 @@ export function setPushUser(userId) {
   if (!userId || record()?.userId !== userId) bindUser(null).catch(() => {});
 }
 export async function pushStatus() {
-  const state = await platform.status(), saved = record();
+  let state;
+  try { state = await platform.status(); }
+  catch { return { configured: false, enabled: false, supported: false, registered: false, backendReady: false, statusError: 'device' }; }
+  const saved = record();
   if (!state.configured || !state.supported || !owner) return { ...state, registered: false, backendReady: false };
   const { data: { session } } = await supabase.auth.getSession();
   if (!session || session.user.id !== owner) return { ...state, registered: false, backendReady: false };
@@ -28,10 +31,11 @@ export async function pushStatus() {
   try {
     const params = new URLSearchParams(); if (saved?.userId === owner) params.set('installationId', saved.installationId);
     const response = await fetch(`/api/push/status?${params}`, { signal: controller.signal, headers: { Authorization: `Bearer ${session.access_token}` } });
-    if (!response.ok) throw new Error('Push unavailable');
+    if (!response.ok) return { ...state, backendReady: false, registered: false, statusError: 'backend' };
     const remote = await response.json();
     return { ...state, backendReady: remote.ready === true, registered: state.enabled && remote.registered === true };
-  } finally { clearTimeout(timer); }
+  } catch { return { ...state, backendReady: false, registered: false, statusError: 'network' }; }
+  finally { clearTimeout(timer); }
 }
 export async function enablePush({ interactive = true } = {}) {
   // Request permission while the browser still has the user's click gesture.
