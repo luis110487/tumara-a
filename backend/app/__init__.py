@@ -3,6 +3,7 @@ from flask import Flask, jsonify
 from werkzeug.exceptions import HTTPException
 from dotenv import load_dotenv
 from flask_cors import CORS
+from .security import init_security
 
 load_dotenv()
 
@@ -12,10 +13,13 @@ def create_app():
         SUPABASE_URL=os.environ.get('SUPABASE_URL', '').rstrip('/'),
         SUPABASE_ANON_KEY=os.environ.get('SUPABASE_ANON_KEY', ''),
         FORCE_HTTPS=os.environ.get('FORCE_HTTPS', 'true').lower() == 'true',
+        # Solo para depurar: expone el detalle interno de los errores en las respuestas.
+        EXPOSE_ERRORS=os.environ.get('EXPOSE_ERRORS', 'false').lower() == 'true',
     )
 
     frontend_origins = [o.strip() for o in os.environ.get('FRONTEND_ORIGIN', 'http://localhost:5173').split(',') if o.strip()]
-    CORS(app, resources={r'/api/*': {'origins': frontend_origins}}, supports_credentials=False)
+    CORS(app, resources={r'/api/*': {'origins': frontend_origins, 'methods': ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], 'allow_headers': ['Authorization', 'Content-Type'], 'max_age': 600}}, supports_credentials=False)
+    init_security(app)
 
     @app.after_request
     def security_headers(response):
@@ -35,4 +39,6 @@ def create_app():
     app.register_blueprint(main)
     from .service_catalog import catalog
     app.register_blueprint(catalog)
+    from .seo import seo
+    app.register_blueprint(seo)
     return app

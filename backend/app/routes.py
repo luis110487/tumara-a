@@ -48,14 +48,20 @@ def require_admin():
     try:
         profs = rest('profiles', {'select': 'role,is_active', 'id': f'eq.{user["id"]}', 'limit': '1'}, token=token)
     except SupabaseError as e:
-        abort(500, description=str(e))
+        current_app.logger.warning('require_admin: %s', e)
+        abort(503, description='Servicio temporalmente no disponible')
     if not profs or profs[0]['role'] != 'admin' or not profs[0].get('is_active', True):
         abort(403, description='No autorizado')
     return token, user
 
 
 def api_error(exc, status=400):
-    return jsonify({'error': 'No fue posible completar la operación', 'detail': str(exc)}), status
+    # El detalle interno (texto de Supabase, nombres de tablas) se registra, pero no se envía al cliente.
+    current_app.logger.warning('api_error: %s', exc)
+    body = {'error': 'No fue posible completar la operación'}
+    if current_app.config.get('EXPOSE_ERRORS'):
+        body['detail'] = str(exc)
+    return jsonify(body), status
 
 
 def with_categories(pros):
@@ -976,7 +982,8 @@ def admin_create_admin_user():
         result = rpc('promote_to_admin', {'p_email': email}, token)
         return jsonify(result), 201
     except SupabaseError as e:
-        return jsonify({'warning': 'La cuenta se creó pero no se pudo promover a admin automáticamente', 'detail': str(e)}), 207
+        current_app.logger.warning('promote_to_admin: %s', e)
+        return jsonify({'warning': 'La cuenta se creó pero no se pudo promover a admin automáticamente'}), 207
 
 
 @main.post('/api/admin/users/promote')

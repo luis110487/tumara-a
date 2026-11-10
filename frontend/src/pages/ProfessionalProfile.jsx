@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { apiFetchPublic } from '../lib/apiClient';
 import { WhatsappButton } from '../components/WhatsappButton';
+import { setSeo, professionalJsonLd, SITE_NAME } from '../lib/seo';
 
 export function ProfessionalProfile() {
   const { id } = useParams();
@@ -13,6 +14,20 @@ export function ProfessionalProfile() {
     apiFetchPublic(`/api/professionals/${id}`).then(setP).catch(() => setError('No encontramos este profesional.'));
     apiFetchPublic(`/api/professionals/${id}/reviews`).then(setReviews).catch(() => setReviews([]));
   }, [id]);
+
+  useEffect(() => {
+    const path = `/profesional/${id}`;
+    if (error) { setSeo({ title: `Profesional no encontrado | ${SITE_NAME}`, noindex: true, path }); return; }
+    if (!p) return;
+    const place = p.city ? ` en ${p.city}` : '';
+    setSeo({
+      title: `${p.display_name} — ${p.category || 'Profesional'}${place} | ${SITE_NAME}`,
+      description: p.description ? `${p.display_name}, ${String(p.category || 'profesional').toLowerCase()}${place}. ${p.description}` : `Conoce el perfil de ${p.display_name}${place} en TuMaraña.com y solicita su servicio.`,
+      path,
+      image: p.photo_url,
+      jsonLd: professionalJsonLd(p, path),
+    });
+  }, [p, error, id]);
 
   if (error) return <section className="profile"><p>{error}</p></section>;
   if (!p) return <section className="profile"><p>Cargando…</p></section>;

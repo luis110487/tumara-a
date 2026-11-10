@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /cuenta
+Disallow: /restablecer-contrasena
+Disallow: /mi-perfil
+Disallow: /mis-solicitudes
+Disallow: /solicitud/
+Disallow: /solicitar/
+Disallow: /registrar
+Disallow: /notificaciones
+Disallow: /api/
+
+Sitemap: https://tumara-a.vercel.app/sitemap.xml

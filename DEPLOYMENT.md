@@ -87,3 +87,34 @@ Actualizar en `frontend/vercel.json` los dos `REPLACE_WITH_RENDER_BACKEND` con e
 - CORS restringido al dominio del frontend (`FRONTEND_ORIGIN`).
 - Cabeceras de seguridad (HSTS, X-Frame-Options, nosniff, etc.) configuradas en el backend.
 - No se almacenan contraseñas en la aplicación.
+
+## Seguridad y SEO
+
+**Backend (Render)**
+- La API limita las peticiones por usuario (o por IP si no hay sesión): 300 por minuto en total y límites más estrictos en
+  crear solicitudes, enviar mensajes, calificar, registrarse como profesional, reiniciar contraseñas y el correo de bienvenida
+  (ver `backend/app/security.py`). El límite vive en memoria de cada proceso de gunicorn, así que el efectivo es algo mayor.
+- Las respuestas de error ya no incluyen el detalle interno de Supabase; se registra en el log del servidor.
+  Para depurar de forma temporal se puede definir `EXPOSE_ERRORS=true` (nunca en producción).
+- Un corte de red hacia Supabase devuelve un error JSON controlado (502/503) en lugar de un error 500 sin control.
+- Los cuerpos de más de 2 MB se rechazan (413) antes de consultar a Supabase.
+- `GET /sitemap.xml` genera el mapa del sitio con los profesionales aprobados.
+- Pruebas: `cd backend && python -m unittest discover -s tests`.
+
+**Web (Vercel)**
+- `frontend/vercel.json` añade la política de seguridad de contenido (CSP), HSTS, `X-Frame-Options`, `Referrer-Policy`,
+  `Permissions-Policy` y caché larga para `/assets`. Reescribe `/sitemap.xml` hacia el backend.
+- Si se incorpora un servicio externo nuevo (analítica, mapas, fuentes, chat), hay que añadir su dominio a
+  `script-src`, `connect-src`, `img-src` o `font-src` en esa política o el navegador lo bloqueará.
+- SEO: `frontend/index.html` (metadatos, Open Graph, datos estructurados), `public/robots.txt`, `public/site.webmanifest`,
+  `public/og-image.png`, y `src/lib/seo.js` + `src/components/RouteSeo.jsx` para el título, descripción y URL canónica de cada
+  pantalla. Las pantallas privadas se marcan `noindex`. Cada perfil de profesional publica datos estructurados `ProfessionalService`.
+- Si el dominio de producción cambia, actualizar `SITE_URL` en `src/lib/seo.js`, las URL de `index.html` y de `robots.txt`.
+
+**APK (Android)**
+- `allowBackup="false"` (los datos de sesión no se incluyen en copias de seguridad) y tráfico sin cifrar bloqueado
+  (`network_security_config.xml`).
+- La APK entregada es `release`, no depurable. Está firmada con la llave de depuración existente para que se instale como
+  actualización; **antes de publicar en Google Play hay que firmar con una llave de producción propia** (y guardarla en un lugar seguro:
+  si se pierde no se pueden publicar más actualizaciones).
+

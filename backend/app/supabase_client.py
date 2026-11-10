@@ -4,6 +4,14 @@ import requests
 class SupabaseError(RuntimeError):
     pass
 
+
+def _guard(call, *args, **kwargs):
+    """Convierte los fallos de red (timeout, DNS, conexión) en SupabaseError para que nunca lleguen sin controlar."""
+    try:
+        return call(*args, **kwargs)
+    except requests.RequestException as error:
+        raise SupabaseError(f'Supabase no disponible ({type(error).__name__})') from error
+
 def cfg():
     url = os.environ.get('SUPABASE_URL', '').rstrip('/')
     key = os.environ.get('SUPABASE_ANON_KEY', '')
@@ -26,7 +34,7 @@ def rest(table, params=None, method='GET', data=None, token=None, prefer=None, w
     prefers = [p for p in [prefer, 'count=exact' if with_count else None] if p]
     if prefers:
         h['Prefer'] = ','.join(prefers)
-    r = requests.request(method, f'{url}/rest/v1/{table}', params=params, headers=h, json=data, timeout=15)
+    r = _guard(requests.request, method, f'{url}/rest/v1/{table}', params=params, headers=h, json=data, timeout=15)
     if r.status_code >= 400:
         raise SupabaseError(f'Supabase REST {r.status_code}: {r.text[:800]}')
     body = r.json() if r.text else []
@@ -42,7 +50,7 @@ def rest(table, params=None, method='GET', data=None, token=None, prefer=None, w
 
 def rpc(name, data, token=None):
     url, _ = cfg()
-    r = requests.post(f'{url}/rest/v1/rpc/{name}', headers=headers(token), json=data, timeout=15)
+    r = _guard(requests.post, f'{url}/rest/v1/rpc/{name}', headers=headers(token), json=data, timeout=15)
     if r.status_code >= 400:
         raise SupabaseError(f'Supabase RPC {r.status_code}: {r.text[:800]}')
     return r.json() if r.text else None
@@ -51,7 +59,7 @@ def auth_user(token):
     if not token:
         return None
     url, _ = cfg()
-    r = requests.get(f'{url}/auth/v1/user', headers=headers(token), timeout=10)
+    r = _guard(requests.get, f'{url}/auth/v1/user', headers=headers(token), timeout=10)
     return r.json() if r.status_code == 200 else None
 
 def auth_signup(email, password, full_name=None):
@@ -59,7 +67,7 @@ def auth_signup(email, password, full_name=None):
     payload = {'email': email, 'password': password}
     if full_name:
         payload['data'] = {'full_name': full_name}
-    r = requests.post(f'{url}/auth/v1/signup', headers=headers(), json=payload, timeout=15)
+    r = _guard(requests.post, f'{url}/auth/v1/signup', headers=headers(), json=payload, timeout=15)
     if r.status_code >= 400:
         raise SupabaseError(f'Supabase Auth {r.status_code}: {r.text[:800]}')
     return r.json() if r.text else {}
@@ -80,7 +88,7 @@ def rest_admin(table, params=None, method='GET', data=None, prefer=None):
     url, h = admin_headers()
     if prefer:
         h['Prefer'] = prefer
-    r = requests.request(method, f'{url}/rest/v1/{table}', params=params, headers=h, json=data, timeout=15)
+    r = _guard(requests.request, method, f'{url}/rest/v1/{table}', params=params, headers=h, json=data, timeout=15)
     if r.status_code >= 400:
         raise SupabaseError(f'Supabase REST {r.status_code}: {r.text[:800]}')
     return r.json() if r.text else []
@@ -88,7 +96,7 @@ def rest_admin(table, params=None, method='GET', data=None, prefer=None):
 
 def auth_admin_set_password(user_id, new_password):
     url, h = admin_headers()
-    r = requests.put(f'{url}/auth/v1/admin/users/{user_id}', headers=h, json={'password': new_password}, timeout=15)
+    r = _guard(requests.put, f'{url}/auth/v1/admin/users/{user_id}', headers=h, json={'password': new_password}, timeout=15)
     if r.status_code >= 400:
         raise SupabaseError(f'Supabase Admin {r.status_code}: {r.text[:800]}')
     return r.json() if r.text else {}
@@ -98,7 +106,7 @@ def auth_admin_list_emails():
     emails = {}
     page = 1
     while True:
-        r = requests.get(f'{url}/auth/v1/admin/users', headers=h, params={'page': page, 'per_page': 1000}, timeout=15)
+        r = _guard(requests.get, f'{url}/auth/v1/admin/users', headers=h, params={'page': page, 'per_page': 1000}, timeout=15)
         if r.status_code >= 400:
             raise SupabaseError(f'Supabase Admin {r.status_code}: {r.text[:800]}')
         body = r.json() if r.text else {}
