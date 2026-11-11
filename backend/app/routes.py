@@ -1113,9 +1113,7 @@ def api_push_device():
 @main.get('/api/push/status')
 def api_push_status():
     import uuid
-    from .push_delivery import configured
     _, user = require_user()
-    if not configured(): return jsonify({'ready':False,'registered':False})
     installation=request.args.get('installationId','')
     if installation:
         try: installation=str(uuid.UUID(installation))
@@ -1135,10 +1133,8 @@ def api_push_status():
 
 @main.post('/api/push/test')
 def api_push_test():
-    from .push_delivery import configured, enqueue_test_notification
+    from .push_delivery import enqueue_test_notification
     _, user = require_user()
-    if not configured():
-        return jsonify({'error':'El servicio de notificaciones todavía no está configurado.'}),503
     try:
         devices=rest_admin('push_devices',{'select':'installation_id','user_id':f'eq.{user["id"]}','enabled':'eq.true','limit':'1'})
         if not devices:
