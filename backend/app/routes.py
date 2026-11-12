@@ -274,7 +274,7 @@ def api_professional_mine():
     except SupabaseError as e:
         return api_error(e)
     if not rows:
-        return jsonify({'error': 'No tienes un perfil profesional creado'}), 404
+        return jsonify({'error': 'No tienes un perfil de marañero creado'}), 404
     rows = with_categories(rows)
     return jsonify(rows[0])
 
@@ -324,7 +324,7 @@ def api_professional_mine_update():
     try:
         rows = rest('professionals', {'user_id': f'eq.{user["id"]}'}, method='PATCH', data=data, token=token, prefer='return=representation')
         if not rows:
-            return jsonify({'error': 'No tienes un perfil profesional creado'}), 404
+            return jsonify({'error': 'No tienes un perfil de marañero creado'}), 404
         return jsonify(rows[0])
     except SupabaseError as e:
         return api_error(e)
@@ -382,7 +382,7 @@ def api_request_create():
     try:
         if service_id is not None:
             selected=rest('professional_services',{'select':'id,title','id':f'eq.{service_id}','professional_id':f'eq.{professional_id}','is_active':'eq.true','limit':'1'},token=token)
-            if not selected: return jsonify({'error':'Servicio no disponible para ese profesional.'}),400
+            if not selected: return jsonify({'error':'Servicio no disponible para ese marañero.'}),400
             title=selected[0]['title']
         owner = rest('professionals', {'select': 'user_id', 'id': f'eq.{professional_id}', 'limit': '1'}, token=token)
         if owner and owner[0].get('user_id') == user['id']:
@@ -416,10 +416,10 @@ def api_request_get(request_id):
         req = rows[0]
         pros = rest('professionals', {'select': 'id,user_id,display_name', 'id': f'eq.{req["professional_id"]}', 'limit': '1'}, token=token)
         if not pros:
-            return jsonify({'error': 'Profesional no encontrado'}), 404
+            return jsonify({'error': 'Marañero no encontrado'}), 404
         if req['customer_id'] != user['id'] and pros[0]['user_id'] != user['id']:
             return jsonify({'error': 'No autorizado'}), 403
-        # Cuando el profesional abre una solicitud nueva, pasa a "En conversación".
+        # Cuando el marañero abre una solicitud nueva, pasa a "En conversación".
         if req['status'] == 'requested' and pros[0]['user_id'] == user['id']:
             try:
                 updated = rest('service_requests', {'id': f'eq.{request_id}', 'select': REQUEST_FIELDS}, method='PATCH', data={'status': 'in_conversation', 'status_changed_by': user['id']}, token=token, prefer='return=representation')
@@ -488,7 +488,7 @@ def api_request_status(request_id):
     if status not in VALID_STATUSES:
         return jsonify({'error': 'Estado inválido'}), 400
     transitions = {
-        # El profesional puede avanzar a cualquier paso posterior (incluso completar directamente).
+        # El marañero puede avanzar a cualquier paso posterior (incluso completar directamente).
         'requested': {'in_conversation', 'quoted', 'in_progress', 'completed', 'cancelled'},
         'in_conversation': {'quoted', 'in_progress', 'completed', 'cancelled'},
         'quoted': {'accepted', 'in_progress', 'completed', 'cancelled'},
@@ -534,7 +534,7 @@ def api_notifications():
         rows = rest('user_notifications', {'select': 'id,event_type,title,body,path:target_path,request_id,professional_id,read_at,created_at', 'recipient_id': f'eq.{user["id"]}', 'order': 'created_at.desc', 'limit': '50'}, token=token)
         # Las solicitudes nuevas indican quién las envía y qué servicio pidió (también las guardadas antes).
         try:
-            ids = sorted({str(r['request_id']) for r in rows if r.get('event_type') == 'request_created' and r.get('request_id')})
+            ids = sorted({str(r['request_id']) for r in rows if r.get('event_type') == 'request_created' and r.get('request_id') and not str(r.get('title') or '').startswith('Nueva solicitud de')})
             if ids:
                 reqs = rest('service_requests', {'select': 'id,customer_id,service_title', 'id': f'in.({",".join(ids)})'}, token=token)
                 by_id = {str(r['id']): r for r in reqs}
@@ -545,7 +545,7 @@ def api_notifications():
                         names[prof['id']] = (prof.get('full_name') or '').strip()
                 for row in rows:
                     req = by_id.get(str(row.get('request_id')))
-                    if row.get('event_type') == 'request_created' and req:
+                    if req and row.get('event_type') == 'request_created' and not str(row.get('title') or '').startswith('Nueva solicitud de'):
                         who = names.get(req['customer_id']) or 'Un cliente'
                         row['title'] = f'Nueva solicitud de {who}'
                         row['body'] = f'{who} solicitó: {req["service_title"]}'
@@ -738,7 +738,7 @@ def admin_set_professional_status(professional_id, action):
             updates['profile_color'] = profile_color
         rows = rest('professionals', {'id': f'eq.{professional_id}'}, method='PATCH', data=updates, token=token, prefer='return=representation')
         if not rows:
-            return jsonify({'error': 'Profesional no encontrado'}), 404
+            return jsonify({'error': 'Marañero no encontrado'}), 404
         pro = rows[0]
         if action in ('approve', 'reject') and pro.get('user_id'):
             try:
@@ -766,7 +766,7 @@ def admin_set_professional_color(professional_id):
     try:
         rows = rest('professionals', {'id': f'eq.{professional_id}'}, method='PATCH', data={'profile_color': profile_color}, token=token, prefer='return=representation')
         if not rows:
-            return jsonify({'error': 'Profesional no encontrado'}), 404
+            return jsonify({'error': 'Marañero no encontrado'}), 404
         return jsonify(rows[0])
     except SupabaseError as e:
         return api_error(e)

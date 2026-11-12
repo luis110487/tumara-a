@@ -112,11 +112,11 @@ def send_professional_approved_email(to_email, display_name):
     html = f'''
     <h2 style="color:#092653">¡Tu perfil fue aprobado!</h2>
     <p>Hola {display_name},</p>
-    <p>Buenas noticias: tu perfil profesional en <b>TuMaraña.com</b> fue revisado y aprobado por un administrador.</p>
+    <p>Buenas noticias: tu perfil de marañero en <b>TuMaraña.com</b> fue revisado y aprobado por un administrador.</p>
     <p>Ya apareces públicamente y los clientes pueden encontrarte y contactarte para solicitar tus servicios.</p>
     {button(app_url('/mi-perfil-profesional'), 'Ver mi perfil profesional')}
     '''
-    return send_email(to_email, '¡Tu perfil profesional fue aprobado! - TuMaraña.com', html)
+    return send_email(to_email, '¡Tu perfil de marañero fue aprobado! - TuMaraña.com', html)
 
 
 def send_welcome_email(to_email, full_name):
@@ -124,7 +124,7 @@ def send_welcome_email(to_email, full_name):
     html = f'''
     <h2 style="color:#092653">¡Bienvenido a TuMaraña.com!</h2>
     <p>Hola {full_name},</p>
-    <p>Tu cuenta fue creada correctamente. Ya puedes buscar profesionales confiables para tus necesidades o registrar tu actividad profesional.</p>
+    <p>Tu cuenta fue creada correctamente. Ya puedes buscar marañeros confiables para tus necesidades o registrar tu actividad marañero.</p>
     {button(app_url('/'), 'Entrar a TuMaraña.com')}
     '''
     return send_email(to_email, 'Bienvenido a TuMaraña.com', html)
@@ -133,13 +133,13 @@ def send_welcome_email(to_email, full_name):
 def send_professional_rejected_email(to_email, display_name):
     display_name = html_mod.escape(str(display_name or ''))
     html = f'''
-    <h2 style="color:#092653">Tu perfil profesional no fue aprobado</h2>
+    <h2 style="color:#092653">Tu perfil de marañero no fue aprobado</h2>
     <p>Hola {display_name},</p>
-    <p>Revisamos tu perfil profesional en <b>TuMaraña.com</b> y no fue aprobado en esta ocasión.</p>
+    <p>Revisamos tu perfil de marañero en <b>TuMaraña.com</b> y no fue aprobado en esta ocasión.</p>
     <p>Puedes editar tu perfil y esperar una nueva revisión.</p>
     {button(app_url('/mi-perfil-profesional'), 'Editar mi perfil profesional')}
     '''
-    return send_email(to_email, 'Tu perfil profesional no fue aprobado - TuMaraña.com', html)
+    return send_email(to_email, 'Tu perfil de marañero no fue aprobado - TuMaraña.com', html)
 
 
 def send_new_request_email(to_email, professional_name, customer_name, service_title, request_id=None, accept_url=None):

@@ -19,20 +19,20 @@ begin
     if new.status is not distinct from old.status then return new; end if;
     actor:=new.status_changed_by;
     if new.status='completed' then
-      perform public.enqueue_user_notification(new.customer_id,'review_requested','¿Cómo fue tu servicio?','El servicio "'||new.service_title||'" fue marcado como terminado. Califica al profesional.','/solicitud/'||new.id||'/chat?review=1','review_request:'||new.id,new.id,new.professional_id);
+      perform public.enqueue_user_notification(new.customer_id,'review_requested','¿Cómo fue tu servicio?','El servicio "'||new.service_title||'" fue marcado como terminado. Califica al marañero.','/solicitud/'||new.id||'/chat?review=1','review_request:'||new.id,new.id,new.professional_id);
       return new;
     end if;
-    label:=case new.status when 'in_conversation' then 'El profesional abrió tu solicitud.' when 'quoted' then 'Recibiste una cotización.' when 'accepted' then 'La cotización fue aceptada.' when 'in_progress' then 'El servicio está en progreso.' when 'cancelled' then 'La solicitud fue cancelada.' else 'El estado de tu servicio cambió.' end;
+    label:=case new.status when 'in_conversation' then 'El marañero abrió tu solicitud.' when 'quoted' then 'Recibiste una cotización.' when 'accepted' then 'La cotización fue aceptada.' when 'in_progress' then 'El servicio está en progreso.' when 'cancelled' then 'La solicitud fue cancelada.' else 'El estado de tu servicio cambió.' end;
     recipient:=case when actor=new.customer_id then pro_user else new.customer_id end;
     perform public.enqueue_user_notification(recipient,'request_'||new.status,'Actualización del servicio',label||' ('||new.service_title||')','/solicitud/'||new.id||'/chat','status:'||new.id||':'||new.status,new.id,new.professional_id);
     return new;
   elsif tg_table_name='professionals' then
     if tg_op='INSERT' then
       for admin_user in select id from public.profiles where role='admin' and is_active=true loop
-        perform public.enqueue_user_notification(admin_user,'professional_pending','Perfil pendiente','Hay un nuevo perfil profesional para revisar.','/admin/profesionales','professional_pending:'||new.id||':'||admin_user,null,new.id);
+        perform public.enqueue_user_notification(admin_user,'professional_pending','Perfil pendiente','Hay un nuevo perfil de marañero para revisar.','/admin/profesionales','professional_pending:'||new.id||':'||admin_user,null,new.id);
       end loop;
     elsif new.status is distinct from old.status then
-      label:=case new.status when 'approved' then 'Tu perfil profesional fue aprobado.' when 'rejected' then 'Tu perfil profesional necesita correcciones.' when 'suspended' then 'Tu perfil profesional fue suspendido.' else 'El estado de tu perfil profesional cambió.' end;
+      label:=case new.status when 'approved' then 'Tu perfil de marañero fue aprobado.' when 'rejected' then 'Tu perfil de marañero necesita correcciones.' when 'suspended' then 'Tu perfil de marañero fue suspendido.' else 'El estado de tu perfil de marañero cambió.' end;
       perform public.enqueue_user_notification(new.user_id,'professional_'||new.status,'Perfil profesional',label,'/mi-perfil-profesional','professional_status:'||new.id||':'||new.status,null,new.id);
     end if;
     return new;
