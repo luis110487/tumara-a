@@ -384,6 +384,9 @@ def api_request_create():
             selected=rest('professional_services',{'select':'id,title','id':f'eq.{service_id}','professional_id':f'eq.{professional_id}','is_active':'eq.true','limit':'1'},token=token)
             if not selected: return jsonify({'error':'Servicio no disponible para ese profesional.'}),400
             title=selected[0]['title']
+        owner = rest('professionals', {'select': 'user_id', 'id': f'eq.{professional_id}', 'limit': '1'}, token=token)
+        if owner and owner[0].get('user_id') == user['id']:
+            return jsonify({'error': 'No puedes solicitarte un servicio a ti mismo.'}), 400
         rows = rest('service_requests', method='POST', data={
             'customer_id': user['id'],
             'professional_id': professional_id,
