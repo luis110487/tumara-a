@@ -15,7 +15,7 @@
       "destination": "https://tumara-a.onrender.com/sitemap.xml"
     },
     {
-      "source": "/((?!api|health|sitemap\\.xml|robots\\.txt|site\\.webmanifest|firebase-messaging-sw\\.js|assets/).*)",
+      "source": "/((?!api|health|\\.well-known|sitemap\\.xml|robots\\.txt|site\\.webmanifest|firebase-messaging-sw\\.js|assets/).*)",
       "destination": "/index.html"
     }
   ],

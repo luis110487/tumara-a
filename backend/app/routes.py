@@ -434,6 +434,12 @@ def api_request_get(request_id):
         req['messages'] = msgs
         req['review'] = reviews[0] if reviews else None
         req['is_customer'] = req['customer_id'] == user['id']
+        if not req['is_customer']:
+            try:
+                names = rest_admin('profiles', {'select': 'full_name', 'id': f'eq.{req["customer_id"]}', 'limit': '1'})
+                req['customer_name'] = (names[0].get('full_name') or '').strip() if names else ''
+            except SupabaseError:
+                req['customer_name'] = ''
         return jsonify(req)
     except SupabaseError as e:
         return api_error(e)
@@ -482,10 +488,11 @@ def api_request_status(request_id):
     if status not in VALID_STATUSES:
         return jsonify({'error': 'Estado inválido'}), 400
     transitions = {
-        'requested': {'in_conversation', 'cancelled'},
-        'in_conversation': {'quoted', 'cancelled'},
-        'quoted': {'accepted', 'cancelled'},
-        'accepted': {'in_progress', 'cancelled'},
+        # El profesional puede avanzar a cualquier paso posterior (incluso completar directamente).
+        'requested': {'in_conversation', 'quoted', 'in_progress', 'completed', 'cancelled'},
+        'in_conversation': {'quoted', 'in_progress', 'completed', 'cancelled'},
+        'quoted': {'accepted', 'in_progress', 'completed', 'cancelled'},
+        'accepted': {'in_progress', 'completed', 'cancelled'},
         'in_progress': {'completed', 'cancelled'},
         'completed': set(), 'cancelled': set(),
     }

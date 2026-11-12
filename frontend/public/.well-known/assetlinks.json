@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.tumarana.app",
+      "sha256_cert_fingerprints": ["87:00:2F:AB:30:0D:93:15:BD:F8:AB:73:13:5C:0E:0B:B3:95:FD:AF:43:04:0A:BE:68:D4:52:BB:61:C8:6B:E2"]
+    }
+  }
+]
