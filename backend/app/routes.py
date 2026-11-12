@@ -532,6 +532,25 @@ def api_notifications():
     token, user = require_user()
     try:
         rows = rest('user_notifications', {'select': 'id,event_type,title,body,path:target_path,request_id,professional_id,read_at,created_at', 'recipient_id': f'eq.{user["id"]}', 'order': 'created_at.desc', 'limit': '50'}, token=token)
+        # Las solicitudes nuevas indican quién las envía y qué servicio pidió (también las guardadas antes).
+        try:
+            ids = sorted({str(r['request_id']) for r in rows if r.get('event_type') == 'request_created' and r.get('request_id')})
+            if ids:
+                reqs = rest('service_requests', {'select': 'id,customer_id,service_title', 'id': f'in.({",".join(ids)})'}, token=token)
+                by_id = {str(r['id']): r for r in reqs}
+                customers = sorted({r['customer_id'] for r in reqs if r.get('customer_id')})
+                names = {}
+                if customers:
+                    for prof in rest_admin('profiles', {'select': 'id,full_name', 'id': f'in.({",".join(customers)})'}):
+                        names[prof['id']] = (prof.get('full_name') or '').strip()
+                for row in rows:
+                    req = by_id.get(str(row.get('request_id')))
+                    if row.get('event_type') == 'request_created' and req:
+                        who = names.get(req['customer_id']) or 'Un cliente'
+                        row['title'] = f'Nueva solicitud de {who}'
+                        row['body'] = f'{who} solicitó: {req["service_title"]}'
+        except SupabaseError:
+            pass
         return jsonify(rows)
     except SupabaseError as e:
         return api_error(e)
