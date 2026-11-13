@@ -707,6 +707,46 @@ def api_message(request_id):
         return api_error(e)
 
 
+DELETED_MESSAGE = '[[eliminado]]'
+
+
+def _own_message(request_id, message_id, user, token):
+    """Devuelve el mensaje solo si pertenece a la solicitud y lo escribió el usuario."""
+    rows = rest('messages', {'select': 'id,request_id,sender_id,body,created_at', 'id': f'eq.{message_id}', 'request_id': f'eq.{request_id}', 'limit': '1'}, token=token)
+    if not rows:
+        abort(404, description='Mensaje no encontrado')
+    if rows[0]['sender_id'] != user['id']:
+        abort(403, description='Solo puedes modificar tus propios mensajes')
+    return rows[0]
+
+
+@main.patch('/api/requests/<int:request_id>/messages/<int:message_id>')
+def api_edit_message(request_id, message_id):
+    token, user = require_user()
+    body = str((request.get_json(silent=True) or {}).get('body', '')).strip()[:3000]
+    if not body:
+        return jsonify({'error': 'Mensaje obligatorio'}), 400
+    try:
+        current = _own_message(request_id, message_id, user, token)
+        if current['body'] == DELETED_MESSAGE:
+            return jsonify({'error': 'El mensaje fue eliminado'}), 409
+        rows = rest_admin('messages', {'id': f'eq.{message_id}', 'sender_id': f'eq.{user["id"]}'}, method='PATCH', data={'body': body}, prefer='return=representation')
+        return jsonify(rows[0] if rows else {**current, 'body': body})
+    except SupabaseError as e:
+        return api_error(e)
+
+
+@main.delete('/api/requests/<int:request_id>/messages/<int:message_id>')
+def api_delete_message(request_id, message_id):
+    token, user = require_user()
+    try:
+        current = _own_message(request_id, message_id, user, token)
+        rows = rest_admin('messages', {'id': f'eq.{message_id}', 'sender_id': f'eq.{user["id"]}'}, method='PATCH', data={'body': DELETED_MESSAGE}, prefer='return=representation')
+        return jsonify(rows[0] if rows else {**current, 'body': DELETED_MESSAGE})
+    except SupabaseError as e:
+        return api_error(e)
+
+
 @main.get('/api/admin/professionals')
 def admin_list_professionals():
     token, _ = require_admin()
