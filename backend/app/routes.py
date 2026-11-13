@@ -373,7 +373,7 @@ def api_request_create():
     if not title or not description:
         return jsonify({'error': 'Faltan campos obligatorios'}), 400
     photo_urls=d.get('photo_urls',[])
-    if not isinstance(photo_urls,list) or len(photo_urls)>3 or any(not isinstance(url,str) or len(url)>1000 for url in photo_urls):
+    if not isinstance(photo_urls,list) or len(photo_urls)>10 or any(not isinstance(url,str) or len(url)>1000 for url in photo_urls):
         return jsonify({'error':'Fotos de la solicitud inválidas'}),400
     if photo_urls:
         storage_prefix=f'{current_app.config["SUPABASE_URL"].rstrip("/")}/storage/v1/object/public/request-photos/{user["id"]}/'

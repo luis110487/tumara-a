@@ -33,7 +33,7 @@ begin
       end loop;
     elsif new.status is distinct from old.status then
       label:=case new.status when 'approved' then 'Tu perfil de marañero fue aprobado.' when 'rejected' then 'Tu perfil de marañero necesita correcciones.' when 'suspended' then 'Tu perfil de marañero fue suspendido.' else 'El estado de tu perfil de marañero cambió.' end;
-      perform public.enqueue_user_notification(new.user_id,'professional_'||new.status,'Perfil profesional',label,'/mi-perfil-profesional','professional_status:'||new.id||':'||new.status,null,new.id);
+      perform public.enqueue_user_notification(new.user_id,'professional_'||new.status,'Perfil de marañero',label,'/mi-perfil-profesional','professional_status:'||new.id||':'||new.status,null,new.id);
     end if;
     return new;
   elsif tg_table_name='reviews' then
