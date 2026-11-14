@@ -22,7 +22,7 @@ from .email_client import (
 
 main = Blueprint('main', __name__)
 
-PROFESSIONAL_FIELDS = 'id,display_name,city,neighborhood,description,experience_years,rating,total_reviews,verified,category_id,whatsapp,photo_url,evidence_url_1,evidence_url_2,profile_color'
+PROFESSIONAL_FIELDS = 'id,display_name,city,neighborhood,description,experience_years,rating,total_reviews,verified,category_id,whatsapp,photo_url,evidence_url_1,evidence_url_2,evidence_url_3,evidence_url_4,evidence_url_5,evidence_url_6,evidence_url_7,evidence_url_8,evidence_url_9,evidence_url_10,profile_color'
 REQUEST_FIELDS = 'id,professional_id,customer_id,service_title,description,city,address,preferred_date,status,created_at,updated_at,service_id,service_snapshot,photo_urls,completed_at,status_changed_by'
 VALID_STATUSES = {'requested', 'in_conversation', 'quoted', 'accepted', 'in_progress', 'completed', 'cancelled'}
 PROFESSIONAL_STATUSES = {'pending', 'approved', 'rejected', 'suspended'}
@@ -221,7 +221,17 @@ def api_professional_detail(professional_id):
 @main.get('/api/professionals/<int:professional_id>/reviews')
 def api_professional_reviews(professional_id):
     try:
-        reviews = rest('reviews', {'select': 'id,rating,comment,created_at', 'professional_id': f'eq.{professional_id}', 'order': 'created_at.desc'})
+        reviews = rest('reviews', {'select': 'id,rating,comment,created_at,customer_id', 'professional_id': f'eq.{professional_id}', 'order': 'created_at.desc'})
+        ids = sorted({r['customer_id'] for r in reviews if r.get('customer_id')})
+        names = {}
+        if ids:
+            try:
+                rows = rest_admin('profiles', {'select': 'id,full_name', 'id': f'in.({",".join(ids)})'})
+                names = {row['id']: (row.get('full_name') or '').strip() for row in rows}
+            except SupabaseError:
+                names = {}
+        for r in reviews:
+            r['customer_name'] = names.get(r.pop('customer_id', None)) or 'Cliente'
     except SupabaseError:
         reviews = []
     return jsonify(reviews)
@@ -319,6 +329,10 @@ def api_professional_mine_update():
         data['evidence_url_1'] = str(d.get('evidence_url_1', '')).strip()[:500] or None
     if 'evidence_url_2' in d:
         data['evidence_url_2'] = str(d.get('evidence_url_2', '')).strip()[:500] or None
+    for n in range(3, 11):
+        key = f'evidence_url_{n}'
+        if key in d:
+            data[key] = str(d.get(key, '')).strip()[:500] or None
     if not data:
         return jsonify({'error': 'Nada para actualizar'}), 400
     try:
@@ -414,13 +428,13 @@ def api_request_get(request_id):
         if not rows:
             return jsonify({'error': 'Solicitud no encontrada'}), 404
         req = rows[0]
-        pros = rest('professionals', {'select': 'id,user_id,display_name', 'id': f'eq.{req["professional_id"]}', 'limit': '1'}, token=token)
+        pros = rest('professionals', {'select': 'id,user_id,display_name,category_id', 'id': f'eq.{req["professional_id"]}', 'limit': '1'}, token=token)
         if not pros:
             return jsonify({'error': 'Marañero no encontrado'}), 404
         if req['customer_id'] != user['id'] and pros[0]['user_id'] != user['id']:
             return jsonify({'error': 'No autorizado'}), 403
         # Cuando el marañero abre una solicitud nueva, pasa a "En conversación".
-        if req['status'] == 'requested' and pros[0]['user_id'] == user['id']:
+        if req['status'] == 'requested' and pros[0]['user_id'] == user['id'] and not request.args.get('peek'):
             try:
                 updated = rest('service_requests', {'id': f'eq.{request_id}', 'select': REQUEST_FIELDS}, method='PATCH', data={'status': 'in_conversation', 'status_changed_by': user['id']}, token=token, prefer='return=representation')
                 if updated:
@@ -430,7 +444,13 @@ def api_request_get(request_id):
                 pass
         msgs = rest('messages', {'select': 'id,request_id,sender_id,body,is_read,created_at', 'request_id': f'eq.{request_id}', 'order': 'created_at.asc'}, token=token)
         reviews = rest('reviews', {'select': 'id,rating,comment,created_at', 'request_id': f'eq.{request_id}', 'limit': '1'}, token=token)
-        req['professional'] = {'id': pros[0]['id'], 'display_name': pros[0]['display_name'], 'is_mine': pros[0]['user_id'] == user['id']}
+        category_name = ''
+        try:
+            cats = rest('categories', {'select': 'name', 'id': f'eq.{pros[0].get("category_id")}', 'limit': '1'}) if pros[0].get('category_id') else []
+            category_name = cats[0]['name'] if cats else ''
+        except SupabaseError:
+            pass
+        req['professional'] = {'id': pros[0]['id'], 'display_name': pros[0]['display_name'], 'category': category_name, 'is_mine': pros[0]['user_id'] == user['id']}
         req['messages'] = msgs
         req['review'] = reviews[0] if reviews else None
         req['is_customer'] = req['customer_id'] == user['id']
@@ -527,28 +547,68 @@ def api_request_status(request_id):
         return api_error(e)
 
 
+OLD_TITLES = ('Nuevo mensaje', 'Actualización del servicio', '¿Cómo fue tu servicio?', 'Nueva calificación')
+
+
+def _name_notifications(rows, user_id, token):
+    old = [r for r in rows if r.get('request_id') and (str(r.get('title') or '').startswith('Nueva solicitud de') or r.get('title') in OLD_TITLES)]
+    if not old:
+        return
+    ids = sorted({str(r['request_id']) for r in old})
+    reqs = rest('service_requests', {'select': 'id,customer_id,professional_id,service_title', 'id': f'in.({",".join(ids)})'}, token=token)
+    by_id = {str(r['id']): r for r in reqs}
+    cust_ids = sorted({r['customer_id'] for r in reqs if r.get('customer_id')})
+    pro_ids = sorted({str(r['professional_id']) for r in reqs if r.get('professional_id')})
+    cust = {}
+    if cust_ids:
+        for prof in rest_admin('profiles', {'select': 'id,full_name', 'id': f'in.({",".join(cust_ids)})'}):
+            cust[prof['id']] = (prof.get('full_name') or '').strip() or 'El cliente'
+    pros = {}
+    if pro_ids:
+        plist = rest_admin('professionals', {'select': 'id,display_name,category_id', 'id': f'in.({",".join(pro_ids)})'})
+        cats = {}
+        cat_ids = sorted({str(x['category_id']) for x in plist if x.get('category_id')})
+        if cat_ids:
+            cats = {str(c['id']): c['name'] for c in rest_admin('categories', {'select': 'id,name', 'id': f'in.({",".join(cat_ids)})'})}
+        for x in plist:
+            pros[str(x['id'])] = f"{x['display_name']} {cats.get(str(x.get('category_id')), '')}".strip()
+    for row in old:
+        req = by_id.get(str(row['request_id']))
+        if not req:
+            continue
+        customer = cust.get(req['customer_id'], 'El cliente')
+        pro = pros.get(str(req['professional_id']), 'el marañero')
+        pro_label = f'El marañero {pro}'
+        me_customer = req['customer_id'] == user_id
+        event = row.get('event_type') or ''
+        title = str(row.get('title') or '')
+        service = req.get('service_title') or ''
+        if event == 'request_created':
+            row['title'] = f'{customer} te envió una solicitud'
+            row['body'] = f'{customer} te envió una solicitud: {service}'
+        elif event == 'message_received':
+            who = pro_label if me_customer else customer
+            row['title'] = f'Mensaje de {who}'
+            row['body'] = f'{who} te envió un mensaje.'
+        elif event == 'review_requested':
+            row['title'] = f'Califica a {pro}'
+            row['body'] = f'{pro} marcó el servicio "{service}" como terminado. Califica al marañero.'
+        elif event.startswith('request_') and title == 'Actualización del servicio':
+            who = pro_label if me_customer else customer
+            verbs = {'request_in_conversation': 'abrió tu solicitud.', 'request_quoted': 'te envió una cotización.', 'request_accepted': 'aceptó la solicitud.', 'request_in_progress': 'puso el servicio en progreso.', 'request_cancelled': 'canceló la solicitud.'}
+            row['title'] = who
+            row['body'] = f'{who} {verbs.get(event, "cambió el estado del servicio.")} ({service})'
+
+
+
 @main.get('/api/notifications')
 def api_notifications():
     token, user = require_user()
     try:
         rows = rest('user_notifications', {'select': 'id,event_type,title,body,path:target_path,request_id,professional_id,read_at,created_at', 'recipient_id': f'eq.{user["id"]}', 'order': 'created_at.desc', 'limit': '50'}, token=token)
-        # Las solicitudes nuevas indican quién las envía y qué servicio pidió (también las guardadas antes).
+        # Todas las notificaciones (también las guardadas antes) indican quién actúa: cliente o marañero con su oficio.
         try:
-            ids = sorted({str(r['request_id']) for r in rows if r.get('event_type') == 'request_created' and r.get('request_id') and not str(r.get('title') or '').startswith('Nueva solicitud de')})
-            if ids:
-                reqs = rest('service_requests', {'select': 'id,customer_id,service_title', 'id': f'in.({",".join(ids)})'}, token=token)
-                by_id = {str(r['id']): r for r in reqs}
-                customers = sorted({r['customer_id'] for r in reqs if r.get('customer_id')})
-                names = {}
-                if customers:
-                    for prof in rest_admin('profiles', {'select': 'id,full_name', 'id': f'in.({",".join(customers)})'}):
-                        names[prof['id']] = (prof.get('full_name') or '').strip()
-                for row in rows:
-                    req = by_id.get(str(row.get('request_id')))
-                    if req and row.get('event_type') == 'request_created' and not str(row.get('title') or '').startswith('Nueva solicitud de'):
-                        who = names.get(req['customer_id']) or 'Un cliente'
-                        row['title'] = f'Nueva solicitud de {who}'
-                        row['body'] = f'{who} solicitó: {req["service_title"]}'
+            _name_notifications(rows, user['id'], token)
         except SupabaseError:
             pass
         return jsonify(rows)
@@ -700,6 +760,9 @@ def api_message(request_id):
     if not body:
         return jsonify({'error': 'Mensaje obligatorio'}), 400
     try:
+        state = rest('service_requests', {'select': 'status', 'id': f'eq.{request_id}', 'limit': '1'}, token=token)
+        if state and state[0].get('status') in ('completed', 'cancelled'):
+            return jsonify({'error': 'El servicio finalizó y el chat está cerrado.'}), 409
         rows = rest('messages', method='POST', data={'request_id': request_id, 'sender_id': user['id'], 'body': body}, token=token, prefer='return=representation')
         in_background(notify_new_message, request_id, user, token, body)
         return jsonify(rows[0]), 201
