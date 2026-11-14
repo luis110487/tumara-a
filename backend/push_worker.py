@@ -21,4 +21,4 @@ while True:
         if result.get('sent') or result.get('failed'): logging.info('Push batch sent=%s failed=%s',result['sent'],result['failed'])
     except Exception as error:
         logging.warning('Push dispatcher failed: %s',type(error).__name__)
-    time.sleep(15)
+    time.sleep(3)

@@ -551,7 +551,7 @@ OLD_TITLES = ('Nuevo mensaje', 'Actualización del servicio', '¿Cómo fue tu se
 
 
 def _name_notifications(rows, user_id, token):
-    old = [r for r in rows if r.get('request_id') and (str(r.get('title') or '').startswith('Nueva solicitud de') or r.get('title') in OLD_TITLES)]
+    old = [r for r in rows if r.get('request_id') and (str(r.get('title') or '').startswith('Nueva solicitud de') or str(r.get('title') or '').endswith('te envió una solicitud') or r.get('title') in OLD_TITLES)]
     if not old:
         return
     ids = sorted({str(r['request_id']) for r in old})
@@ -584,8 +584,8 @@ def _name_notifications(rows, user_id, token):
         title = str(row.get('title') or '')
         service = req.get('service_title') or ''
         if event == 'request_created':
-            row['title'] = f'{customer} te envió una solicitud'
-            row['body'] = f'{customer} te envió una solicitud: {service}'
+            row['title'] = f'{customer} te hizo una solicitud de servicio'
+            row['body'] = f'{customer} te hizo una solicitud de servicio'
         elif event == 'message_received':
             who = pro_label if me_customer else customer
             row['title'] = f'Mensaje de {who}'
@@ -597,7 +597,7 @@ def _name_notifications(rows, user_id, token):
             who = pro_label if me_customer else customer
             verbs = {'request_in_conversation': 'abrió tu solicitud.', 'request_quoted': 'te envió una cotización.', 'request_accepted': 'aceptó la solicitud.', 'request_in_progress': 'puso el servicio en progreso.', 'request_cancelled': 'canceló la solicitud.'}
             row['title'] = who
-            row['body'] = f'{who} {verbs.get(event, "cambió el estado del servicio.")} ({service})'
+            row['body'] = f'{who} {verbs.get(event, "cambió el estado del servicio.")}'
 
 
 
@@ -611,6 +611,9 @@ def api_notifications():
             _name_notifications(rows, user['id'], token)
         except SupabaseError:
             pass
+        for row in rows:
+            if str(row.get('event_type') or '').startswith('request_') and row.get('body'):
+                row['body'] = re.sub(r'\s*\([^)]*\)\s*$', '', row['body'])
         return jsonify(rows)
     except SupabaseError as e:
         return api_error(e)
@@ -661,6 +664,17 @@ def api_notifications_read_all():
 def in_background(fn, *args):
     """Envia las notificaciones por correo sin bloquear la respuesta al usuario."""
     threading.Thread(target=fn, args=args, daemon=True).start()
+
+
+def kick_push():
+    """Entrega al instante las push en cola (sin esperar el ciclo del worker)."""
+    def run():
+        try:
+            from .push_delivery import dispatch_pending
+            dispatch_pending(5)
+        except Exception:
+            pass
+    threading.Thread(target=run, daemon=True).start()
 
 
 def notify_new_request(request_id, professional_id, customer_name, service_title, token, url_root):
@@ -776,6 +790,7 @@ def api_message(request_id):
             return jsonify({'error': 'El servicio finalizó y el chat está cerrado.'}), 409
         rows = rest('messages', method='POST', data={'request_id': request_id, 'sender_id': user['id'], 'body': body}, token=token, prefer='return=representation')
         in_background(notify_new_message, request_id, user, token, body)
+        kick_push()
         return jsonify(rows[0]), 201
     except SupabaseError as e:
         return api_error(e)

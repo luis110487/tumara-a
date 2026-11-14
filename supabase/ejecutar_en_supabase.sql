@@ -45,7 +45,7 @@ begin
     select user_id into pro_user from public.professionals where id=new.professional_id;
     if tg_op='INSERT' then
       select coalesce(nullif(trim(full_name),''),'Un cliente') into customer_name from public.profiles where id=new.customer_id;
-      perform public.enqueue_user_notification(pro_user,'request_created',coalesce(customer_name,'Un cliente')||' te envió una solicitud',coalesce(customer_name,'Un cliente')||' te envió una solicitud: '||new.service_title,'/solicitud/'||new.id||'/chat','request:'||new.id,new.id,new.professional_id);
+      perform public.enqueue_user_notification(pro_user,'request_created',coalesce(customer_name,'Un cliente')||' te hizo una solicitud de servicio',coalesce(customer_name,'Un cliente')||' te hizo una solicitud de servicio','/solicitud/'||new.id||'/chat','request:'||new.id,new.id,new.professional_id);
       return new;
     end if;
     if new.status is not distinct from old.status then return new; end if;
@@ -60,7 +60,7 @@ begin
     actor_name:=case when actor=new.customer_id then customer_name else 'El marañero '||pro_name end;
     label:=actor_name||case new.status when 'in_conversation' then ' abrió tu solicitud.' when 'quoted' then ' te envió una cotización.' when 'accepted' then ' aceptó la solicitud.' when 'in_progress' then ' puso el servicio en progreso.' when 'cancelled' then ' canceló la solicitud.' else ' cambió el estado del servicio.' end;
     recipient:=case when actor=new.customer_id then pro_user else new.customer_id end;
-    perform public.enqueue_user_notification(recipient,'request_'||new.status,actor_name,label||' ('||new.service_title||')','/solicitud/'||new.id||'/chat','status:'||new.id||':'||new.status,new.id,new.professional_id);
+    perform public.enqueue_user_notification(recipient,'request_'||new.status,actor_name,label,'/solicitud/'||new.id||'/chat','status:'||new.id||':'||new.status,new.id,new.professional_id);
     return new;
   elsif tg_table_name='professionals' then
     if tg_op='INSERT' then
