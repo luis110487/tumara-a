@@ -637,6 +637,17 @@ def api_notification_read(notification_id):
         return api_error(e)
 
 
+@main.delete('/api/notifications/<int:notification_id>')
+def api_notification_delete(notification_id):
+    """Una notificación abierta se elimina; solo puede borrarla su destinatario."""
+    token, user = require_user()
+    try:
+        rest_admin('user_notifications', {'id': f'eq.{notification_id}', 'recipient_id': f'eq.{user["id"]}'}, method='DELETE')
+        return jsonify({'ok': True})
+    except SupabaseError as e:
+        return api_error(e)
+
+
 @main.post('/api/notifications/read-all')
 def api_notifications_read_all():
     token, user = require_user()
